@@ -1,0 +1,960 @@
+    @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800;900&display=swap');
+
+    :root {
+      --bg-color: #FFFDF0;
+      --primary: #FF3B6B;
+      --secondary: #00D2FF;
+      --accent: #FFD600;
+      --record: #A855F7;
+      --story: #FF9100;
+      --dark: #1E1E24;
+      --goal-color: #00E676;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      background-image: radial-gradient(#E5E0C8 2px, transparent 2px);
+      background-size: 24px 24px;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: var(--dark);
+      overflow: hidden;
+    }
+
+    #game-wrapper {
+      position: relative;
+      width: 420px;
+      height: 720px;
+      max-width: 100vw;
+      max-height: 100vh;
+      background: #FFFFFF;
+      border: 4px solid var(--dark);
+      border-radius: 4px;
+      box-shadow: 10px 10px 0px var(--dark);
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 共通オーバーレイUI */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 253, 240, 0.96);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* タイトルロゴ */
+    .title-badge {
+      background: var(--accent);
+      border: 3px solid var(--dark);
+      border-radius: 2px;
+      padding: 3px 12px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 3px 3px 0px var(--dark);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 900;
+      margin: 0 0 4px 0;
+      line-height: 1.05;
+      color: var(--primary);
+      text-shadow: 3px 3px 0px var(--dark);
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: var(--dark);
+    }
+
+    /* ホーム画面の装備キャラクタープレビュー */
+    .home-char-showcase {
+      background: #FFFFFF;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      padding: 8px 16px;
+      margin-bottom: 10px;
+      box-shadow: 4px 4px 0px var(--dark);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #home-char-canvas {
+      display: block;
+      width: 68px;
+      height: 68px;
+      background: radial-gradient(circle, #F1F5F9 0%, #E2E8F0 100%);
+      border: 2px solid var(--dark);
+      border-radius: 3px;
+    }
+
+    .home-equip-info {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+
+    .best-record-banner {
+      background: #FFFFFF;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      padding: 5px 14px;
+      font-size: 14px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      box-shadow: 4px 4px 0px var(--record);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .best-record-banner span.val {
+      color: var(--record);
+      font-size: 17px;
+    }
+
+    .coin-banner {
+      background: #FFFBEB;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 3px 3px 0px var(--dark);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .coin-icon {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      background: #FFD600;
+      border: 2px solid var(--dark);
+      border-radius: 50%;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      width: 100%;
+      max-width: 295px;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 900;
+      padding: 12px 15px;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      cursor: pointer;
+      box-shadow: 5px 5px 0px var(--dark);
+      transition: transform 0.08s, box-shadow 0.08s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0px var(--dark);
+    }
+
+    .btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 2px 2px 0px var(--dark);
+    }
+
+    .btn-easy {
+      background: var(--secondary);
+      color: var(--dark);
+    }
+
+    .btn-normal {
+      background: var(--accent);
+      color: var(--dark);
+    }
+
+    .btn-hard {
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+
+    .btn-record {
+      background: var(--record);
+      color: #FFFFFF;
+      border-width: 3px;
+    }
+
+    .btn-story {
+      background: var(--story);
+      color: var(--dark);
+      border-width: 3px;
+    }
+
+    .btn-practice {
+      background: #00D2FF;
+      color: var(--dark);
+      border-width: 3px;
+    }
+
+    .btn-skin {
+      background: #FF6B9D;
+      color: #FFFFFF;
+      border-width: 3px;
+    }
+
+    /* ショップ切り替えタブ */
+    .shop-tabs {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 10px;
+    }
+
+    .shop-tab {
+      flex: 1;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 8px 6px;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      background: #FFFFFF;
+      cursor: pointer;
+      box-shadow: 3px 3px 0px var(--dark);
+    }
+
+    .shop-tab.active {
+      background: #FFD600;
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0px var(--dark);
+    }
+
+    /* スキン選択グリッド */
+    .skin-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 14px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+
+    .skin-card {
+      background: #FFFFFF;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      padding: 10px 8px;
+      box-shadow: 4px 4px 0px var(--dark);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      font-weight: 900;
+      font-size: 13px;
+      transition: transform 0.06s;
+    }
+
+    .skin-card:hover {
+      transform: translate(-1px, -1px);
+    }
+
+    .skin-card.selected {
+      background: #FFFBEB;
+      border-color: #FF3B6B;
+      box-shadow: 4px 4px 0px #FF3B6B;
+    }
+
+    .skin-card.locked {
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .skin-price-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border: 2px solid var(--dark);
+      border-radius: 2px;
+      background: #FFD600;
+      color: var(--dark);
+    }
+
+    .skin-price-tag.owned {
+      background: #E2E8F0;
+    }
+
+    .skin-price-tag.equipped {
+      background: #00E676;
+    }
+
+    .skin-preview-box {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--dark);
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      overflow: visible;
+    }
+
+    .sword-svg-preview {
+      width: 46px;
+      height: 46px;
+      display: block;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.85));
+    }
+
+    .skin-card.ultimate-sword {
+      background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4C1D95 100%);
+      color: #FDE047;
+      border-color: #FACC15;
+      box-shadow: 4px 4px 0px #F59E0B;
+    }
+
+    .skin-card.ultimate-sword.locked {
+      background: linear-gradient(135deg, #1E293B 0%, #312E81 100%);
+      color: #FDE68A;
+    }
+
+    .crown-badge {
+      position: absolute;
+      top: -10px;
+      width: 18px;
+      height: 8px;
+      background: #FFD600;
+      border: 2px solid var(--dark);
+      border-radius: 1px;
+    }
+
+    .sword-tag {
+      font-size: 10px;
+      font-weight: 900;
+      color: #B91C1C;
+      background: #FEF2F2;
+      border: 1.5px solid #FCA5A5;
+      border-radius: 2px;
+      padding: 1px 6px;
+    }
+
+    .btn-retry {
+      background: var(--goal-color);
+      color: var(--dark);
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .btn-back {
+      background: #FFFFFF;
+      color: var(--dark);
+      justify-content: center;
+      font-size: 14px;
+      padding: 9px 14px;
+    }
+
+    .stage-tag {
+      font-size: 11px;
+      background: #FFFFFF;
+      color: var(--dark);
+      border: 2px solid var(--dark);
+      border-radius: 2px;
+      padding: 2px 6px;
+    }
+
+    /* ストーリー選択UI */
+    .story-tabs {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .story-tab {
+      flex: 1;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 8px 4px;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      background: #FFFFFF;
+      cursor: pointer;
+      box-shadow: 3px 3px 0px var(--dark);
+    }
+
+    .story-tab.active {
+      background: var(--accent);
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0px var(--dark);
+    }
+
+    .story-list {
+      width: 100%;
+      height: 410px;
+      overflow-y: auto;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      background: #FFFFFF;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+      box-shadow: 4px 4px 0px var(--dark);
+    }
+
+    .story-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      border: 2px solid var(--dark);
+      border-radius: 2px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      background: #F8FAFC;
+      text-align: left;
+      transition: background 0.1s;
+    }
+
+    .story-item:hover:not(.locked) {
+      background: #FEF08A;
+    }
+
+    .story-item.locked {
+      background: #E2E8F0;
+      color: #94A3B8;
+      cursor: not-allowed;
+      border-color: #94A3B8;
+    }
+
+    .story-item.boss-stage {
+      background: #FFF1F2;
+      border-color: #E11D48;
+    }
+
+    .story-item.cleared {
+      background: #ECFDF5;
+    }
+
+    .story-badge {
+      font-size: 10px;
+      padding: 2px 5px;
+      border: 1.5px solid var(--dark);
+      border-radius: 2px;
+      margin-left: 4px;
+      background: #FFFFFF;
+      color: var(--dark);
+    }
+
+    .story-badge.boss {
+      background: #FF3B6B;
+      color: #FFFFFF;
+    }
+
+    /* プレイ中のHUD */
+    #hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 5;
+      gap: 6px;
+    }
+
+    .hud-box {
+      background: #FFFFFF;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      padding: 5px 9px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 4px 4px 0px var(--dark);
+      white-space: nowrap;
+    }
+
+    #hud-stage {
+      background: var(--accent);
+      max-width: 145px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #hud-stage.record-mode {
+      background: var(--record);
+      color: #FFFFFF;
+    }
+
+    #hud-stage.story-mode {
+      background: var(--story);
+      color: var(--dark);
+    }
+
+    /* ボス戦HUD */
+    #boss-hud {
+      position: absolute;
+      top: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1E1E24;
+      color: #FFFFFF;
+      border: 3px solid #FF3B6B;
+      border-radius: 3px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 4px 4px 0px #FF3B6B;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .boss-hp-pip {
+      width: 16px;
+      height: 12px;
+      background: #FF3B6B;
+      border: 2px solid #FFFFFF;
+      border-radius: 1px;
+    }
+
+    .boss-hp-pip.lost {
+      background: #475569;
+      border-color: #64748B;
+    }
+
+    .controls-hint {
+      margin-top: 16px;
+      background: #FFFFFF;
+      border: 2px solid var(--dark);
+      border-radius: 3px;
+      padding: 9px 11px;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.5;
+      box-shadow: 3px 3px 0px var(--dark);
+      width: 100%;
+      max-width: 310px;
+    }
+
+    .controls-hint span.highlight {
+      color: #E11D48;
+      font-weight: 900;
+    }
+
+    .result-title {
+      font-size: 34px;
+      font-weight: 900;
+      margin: 0 0 6px 0;
+      text-shadow: 3px 3px 0px var(--dark);
+    }
+
+    .new-record-badge {
+      background: #FFD600;
+      color: var(--dark);
+      border: 3px solid var(--dark);
+      border-radius: 2px;
+      padding: 3px 12px;
+      font-size: 14px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      box-shadow: 3px 3px 0px var(--dark);
+    }
+
+    /* 豆知識カード */
+    .trivia-box {
+      background: #FEF9C3;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      box-shadow: 4px 4px 0px var(--dark);
+      width: 100%;
+      max-width: 320px;
+      text-align: left;
+    }
+
+    .trivia-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: #B45309;
+      margin-bottom: 4px;
+      border-bottom: 2px dashed #D97706;
+      padding-bottom: 2px;
+    }
+
+    .trivia-text {
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+      color: var(--dark);
+    }
+
+    .result-stats {
+      background: #FFFFFF;
+      border: 3px solid var(--dark);
+      border-radius: 3px;
+      padding: 10px 18px;
+      margin-bottom: 14px;
+      box-shadow: 5px 5px 0px var(--dark);
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 900;
+      margin: 4px 0;
+    }
+  
+
+/* BGM ON/OFF ボタン */
+#bgm-toggle {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 20;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 7px;
+  background: #FFFFFF;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  cursor: pointer;
+}
+
+#bgm-toggle.off {
+  background: #E2E8F0;
+  color: #64748B;
+}
+
+/* ボスGIFの元画像（キャンバスに描画するための読み込み用。画面には見えない） */
+.boss-gif-src {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ボスGIFの表示用（キャンバスの上、HUDやメニューの下に重ねる） */
+#boss-gif-overlay {
+  position: absolute;
+  z-index: 1;
+  display: none;
+  pointer-events: none;
+}
+
+/* ストーリーモード開始時のオープニング動画（ゲーム画面全体） */
+#opening-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  cursor: pointer;
+}
+
+#opening-screen video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#opening-skip {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+/* クリア画面のキャラクターのエモート */
+#clear-emote {
+  display: none;
+  width: 180px;
+  height: 100px;
+  margin: 0 0 6px 0;
+}
+
+/* ショップのタブが3つ並ぶので少しだけ詰める */
+.shop-tab {
+  font-size: 12px;
+  padding: 8px 2px;
+}
+
+/* 忍術ボタン（ゲーム中、画面左下。タップでも発動できる） */
+#jutsu-btn {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 8;
+  display: none;
+  overflow: hidden;
+  min-width: 96px;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 10px;
+  background: #FFFFFF;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  cursor: pointer;
+}
+
+#jutsu-btn .jb-gauge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  opacity: 0.55;
+}
+
+#jutsu-btn .jb-label {
+  position: relative;
+}
+
+/* ショップの忍術カード */
+.jutsu-card {
+  grid-column: 1 / -1;
+  align-items: stretch;
+  text-align: left;
+  gap: 8px;
+}
+
+.jutsu-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.jutsu-icon {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  padding: 5px;
+  border: 3px solid #1E1E24;
+  border-radius: 4px;
+  background: radial-gradient(circle, #334155 0%, #0F172A 100%);
+}
+
+.jutsu-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.jutsu-name {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.jutsu-sub {
+  margin-left: 8px;
+  font-size: 11px;
+}
+
+.jutsu-desc {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #CBD5E1;
+  margin-top: 2px;
+}
+
+.jutsu-stat {
+  font-size: 11px;
+  font-weight: 900;
+  color: #FDE047;
+  margin-top: 4px;
+}
+
+.jutsu-row {
+  display: flex;
+  gap: 8px;
+}
+
+.jutsu-btn {
+  flex: 1;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 7px 4px;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px #1E1E24;
+}
+
+.jutsu-btn.buy {
+  background: #FFD600;
+  color: #1E1E24;
+}
+
+.jutsu-btn.on {
+  background: #00E676;
+  color: #1E1E24;
+}
+
+.jutsu-btn.dim {
+  background: #94A3B8;
+  color: #1E293B;
+}
+
+/* かんたんチュートリアル */
+#tutorial-screen {
+  z-index: 25;
+  padding: 14px;
+}
+
+#tutorial-canvas {
+  width: 300px;
+  height: 150px;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 4px 4px 0px #1E1E24;
+  margin: 6px 0 10px 0;
+  background: #FFFDF0;
+}
+
+#tutorial-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0 0 8px 0;
+}
+
+#tutorial-text {
+  width: 100%;
+  max-width: 320px;
+  min-height: 112px;
+  background: #FFFFFF;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 4px 4px 0px #1E1E24;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+#tutorial-text p {
+  margin: 4px 0;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+#tutorial-dots {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.tut-dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #1E1E24;
+  border-radius: 50%;
+  background: #FFFFFF;
+}
+
+.tut-dot.on {
+  background: #FFD600;
+}
+
+#tutorial-btns {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.tut-btn {
+  flex: 1;
+  justify-content: center;
+  font-size: 14px;
+  padding: 10px 6px;
+}
+
+#tutorial-open {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  z-index: 12;
+  display: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 8px;
+  background: #FFFFFF;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  cursor: pointer;
+}

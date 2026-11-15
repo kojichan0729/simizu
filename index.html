@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WALL KICK - 壁けりゲーム</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="game-wrapper">
+  <!-- プレイ中HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-stage" class="hud-box">STAGE 1</div>
+    <div id="hud-height" class="hud-box">残り: 100m</div>
+    <div id="hud-kicks" class="hud-box">COIN: 0</div>
+  </div>
+
+  <!-- ボス戦HUD -->
+  <div id="boss-hud" class="hidden">
+    <span id="boss-name-label">BOSS</span>
+    <div id="boss-hp-bars" style="display:flex; gap:4px;"></div>
+  </div>
+
+  <!-- タイトル・ステージ選択画面 -->
+  <div id="screen-title" class="overlay">
+    <div class="title-badge">POP ACTION!</div>
+    <h1>WALL KICK</h1>
+    <div class="subtitle">壁を蹴って危険を突破せよ！</div>
+
+    <div class="home-char-showcase">
+      <canvas id="home-char-canvas" width="68" height="68"></canvas>
+      <div class="home-equip-info">
+        <div style="font-size:10px; color:#64748B;">CURRENT EQUIP</div>
+        <div id="home-ninja-name" style="color:#1E1E24; font-size:13px;">ノーマル忍者</div>
+        <div id="home-sword-name" style="color:#E11D48; font-size:12px;">見習いの竹刀 (撃破10%)</div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; justify-content:center;">
+      <div class="best-record-banner" style="margin-bottom:0; padding:5px 10px; font-size:13px;">
+        <span>RECORD:</span>
+        <span id="title-best-record" class="val" style="font-size:15px;">0m</span>
+      </div>
+      <div class="coin-banner">
+        <span class="coin-icon"></span>
+        <span>COIN:</span>
+        <span id="title-total-coins" style="color:#D97706; font-size:15px;">0</span>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-story" onclick="openStorySelect()">
+        <span>STORY MODE</span>
+        <span class="stage-tag">全131話</span>
+      </button>
+      <button class="btn btn-practice" onclick="openPracticeSelect()">
+        <span>PRACTICE MODE</span>
+        <span class="stage-tag">3 STAGES</span>
+      </button>
+      <button class="btn btn-record" onclick="startGame('record')">
+        <span>RECORD MODE</span>
+        <span class="stage-tag">ENDLESS</span>
+      </button>
+      <button class="btn btn-skin" onclick="openSkinSelect()">
+        <span>SKIN &amp; SWORD SHOP</span>
+        <span id="title-skin-tag" class="stage-tag">ノーマル忍者 / 10%</span>
+      </button>
+    </div>
+
+    <div class="controls-hint">
+      <div>[操作1] <span class="highlight">クリック / タップ / ↑ / W</span> : 壁けり＆二段ジャンプ</div>
+      <div style="margin-top:3px;">[操作2] <span class="highlight">スペースキー</span> : <span class="highlight">回転攻撃</span>（使用後1秒制限）</div>
+    </div>
+  </div>
+
+  <!-- PRACTICEモード選択画面 -->
+  <div id="screen-practice" class="overlay hidden">
+    <div class="title-badge" style="background: #00D2FF; color: #1E1E24;">PRACTICE MODE</div>
+    <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 8px 0;">練習ステージを選択</h2>
+    <div class="subtitle" style="margin-bottom: 18px;">基本操作やトゲ回避の練習ができるモードです</div>
+
+    <div class="btn-group" style="margin-bottom: 18px;">
+      <button class="btn btn-easy" onclick="startGame('easy')">
+        <span>STAGE 1 : EASY</span>
+        <span class="stage-tag">100m</span>
+      </button>
+      <button class="btn btn-normal" onclick="startGame('normal')">
+        <span>STAGE 2 : NORMAL</span>
+        <span class="stage-tag">180m</span>
+      </button>
+      <button class="btn btn-hard" onclick="startGame('hard')">
+        <span>STAGE 3 : HARD</span>
+        <span class="stage-tag">260m</span>
+      </button>
+    </div>
+
+    <button class="btn btn-back" style="width: 100%; max-width: 295px;" onclick="backToTitle()">タイトルへ戻る</button>
+  </div>
+
+  <!-- スキン・剣変更画面 -->
+  <div id="screen-skin" class="overlay hidden">
+    <div class="title-badge" style="background: #FF6B9D; color: #FFFFFF;">SKIN &amp; SWORD SHOP</div>
+    <h2 style="font-size: 22px; font-weight: 900; margin: 0 0 6px 0;">忍者スキン・剣の購入と装備</h2>
+    <div class="coin-banner" style="margin-bottom: 10px;">
+      <span class="coin-icon"></span>
+      <span>所持コイン:</span>
+      <span id="shop-total-coins" style="color:#D97706; font-size:16px;">0</span>
+    </div>
+
+    <div class="shop-tabs">
+      <button id="shop-tab-ninja" class="shop-tab active" onclick="switchShopTab('ninja')">忍者スキン (13)</button>
+      <button id="shop-tab-sword" class="shop-tab" onclick="switchShopTab('sword')">剣・ブレード (12)</button>
+      <button id="shop-tab-jutsu" class="shop-tab" onclick="switchShopTab('jutsu')">忍術 (3)</button>
+    </div>
+
+    <div id="skin-grid" class="skin-grid"></div>
+
+    <button class="btn btn-back" style="width: 100%; max-width: 290px;" onclick="backToTitle()">決定してタイトルへ</button>
+  </div>
+
+  <!-- ストーリーモード選択画面 -->
+  <div id="screen-story" class="overlay hidden">
+    <div class="title-badge" style="background: #FF9100; color: #1E1E24;">STORY MODE</div>
+    <h2 style="font-size: 24px; font-weight: 900; margin: 0 0 8px 0;">冒険するステージを選択</h2>
+
+    <div class="story-tabs">
+      <button id="tab-japan" class="story-tab active" onclick="switchStoryTab('japan')">日本列島篇 (47)</button>
+      <button id="tab-world" class="story-tab" onclick="switchStoryTab('world')">世界篇 (60)</button>
+      <button id="tab-space" class="story-tab" onclick="switchStoryTab('space')">宇宙編 (24)</button>
+    </div>
+
+    <div id="story-stage-list" class="story-list"></div>
+
+    <button class="btn btn-back" style="width: 100%; max-width: 290px;" onclick="backToTitle()">タイトルへ戻る</button>
+  </div>
+
+  <!-- リザルト（クリア・ゲームオーバー）画面 -->
+  <div id="screen-result" class="overlay hidden">
+    <div id="result-badge" class="title-badge">RESULT</div>
+    <h2 id="result-title" class="result-title">STAGE CLEAR!</h2>
+    <div id="new-record-tag" class="new-record-badge hidden">NEW RECORD!!</div>
+
+    <!-- ストーリークリア時の豆知識ボックス -->
+    <div id="result-trivia-box" class="trivia-box hidden">
+      <div id="trivia-header" class="trivia-title">[豆知識] 地域の解説</div>
+      <div id="trivia-body" class="trivia-text"></div>
+    </div>
+
+    <div class="result-stats">
+      <div class="stat-row">
+        <span>ステージ</span>
+        <span id="res-stage">EASY</span>
+      </div>
+      <div class="stat-row">
+        <span>到達高度</span>
+        <span id="res-height">100m</span>
+      </div>
+      <div class="stat-row">
+        <span>獲得コイン</span>
+        <span id="res-coins" style="color:#D97706;">+0枚 (計 0枚)</span>
+      </div>
+      <div class="stat-row" id="res-best-row">
+        <span>最高記録</span>
+        <span id="res-best">0m</span>
+      </div>
+      <div class="stat-row">
+        <span>壁けり回数</span>
+        <span id="res-kicks">0回</span>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button id="btn-next-story" class="btn btn-story hidden" style="justify-content: center;" onclick="playNextStoryStage()">次のステージへ進む</button>
+      <button class="btn btn-retry" onclick="retryGame()">もういちど遊ぶ</button>
+      <button id="btn-result-back" class="btn btn-back" onclick="backFromResult()">モード選択へ</button>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas" width="420" height="720"></canvas>
+</div>
+
+<script src="game.js"></script>
+
+</body>
+</html>
