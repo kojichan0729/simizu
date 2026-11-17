@@ -958,3 +958,56 @@
   box-shadow: 3px 3px 0px #1E1E24;
   cursor: pointer;
 }
+
+/* ショップのタブが4つ並ぶので、2行にする */
+.shop-tabs {
+  flex-wrap: wrap;
+}
+
+.shop-tab {
+  flex: 1 1 calc(50% - 4px);
+}
+
+/* 忍具ボタン（ゲーム中、画面左下。忍術ボタンと同じ位置・同じ見た目） */
+#tool-btn {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 8;
+  display: none;
+  overflow: hidden;
+  min-width: 96px;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 10px;
+  background: #FFFFFF;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  cursor: pointer;
+}
+
+#tool-btn .jb-gauge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  opacity: 0.55;
+}
+
+#tool-btn .jb-label {
+  position: relative;
+}
+
+.tool-carry {
+  flex: 2;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: #FDE047;
+  align-self: center;
+}
