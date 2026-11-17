@@ -742,7 +742,7 @@
   const STORY_DATA = {
     japan: [
       { name: '北海道', region: '北海道地方', goal: 90, boss: null, trivia: '日本の総面積の約22%を占める広大な大地。実は本州・四国・九州を合わせた面積の約4分の1もあります！' },
-      { name: '青森県', region: '東北地方', goal: 95, boss: null, trivia: 'りんごの生産量が日本一（全国の約60%）！ねぶた祭の迫力ある山車でも有名です。知らなかっただろぅ？www' },
+      { name: '青森県', region: '東北地方', goal: 95, boss: null, trivia: 'りんごの生産量が日本一（全国の約60%）！ねぶた祭の迫力ある山車でも有名です。' },
       { name: '岩手県', region: '東北地方', goal: 95, boss: null, trivia: '都道府県の中で北海道に次いで2番目に広い面積を持ち、わんこそばや中尊寺金色堂が有名です。' },
       { name: '宮城県', region: '東北地方', goal: 100, boss: null, trivia: '日本三景のひとつ「松島」があり、伊達政宗が築いた仙台城や牛タン焼きが名物です。' },
       { name: '秋田県', region: '東北地方', goal: 100, boss: null, trivia: '日本で最も深い湖「田沢湖（水深423.4m）」があり、冬でも凍らない神秘の湖として知られます。' },
@@ -755,7 +755,7 @@
       { name: '千葉県', region: '関東地方', goal: 115, boss: null, trivia: '落花生や梨、醤油の生産量が日本一！日本の空の玄関口である成田国際空港があります。' },
       { name: '東京都', region: '関東地方', goal: 120, boss: null, trivia: '日本の首都であり世界最大級の都市圏。実は小笠原諸島など南の島々も東京都に含まれます。' },
       { name: '神奈川県', region: '関東地方', goal: 125, boss: '大仏ガーディアン', trivia: '日本最大のチャイナタウン「横浜中華街」や、古都・鎌倉、温泉地の箱根など見どころ満載です。' },
-      { name: '新潟県', region: '中部地方', goal: 120, boss: null, trivia: 'コシヒカリに代表される日本有数の米どころ！佐渡ヶ島は沖縄本島に次いで日本で2番目に大きい離島です。' },
+      { name: '新潟県', region: '中部地方', goal: 120, boss: null, trivia: 'コシヒカリに代表される日本有数の米どころ！佐渡島は沖縄本島に次いで日本で2番目に大きい離島です。' },
       { name: '富山県', region: '中部地方', goal: 120, boss: null, trivia: '標高3,000m級の立山連峰から水深1,000mの富山湾まで、高低差4,000mのダイナミックな地形を持ちます。' },
       { name: '石川県', region: '中部地方', goal: 125, boss: null, trivia: '日本の金箔の99%以上が金沢で生産されています！兼六園や輪島塗など伝統工芸が盛んです。' },
       { name: '福井県', region: '中部地方', goal: 125, boss: null, trivia: '国内で発見された恐竜化石の約8割が福井県で見つかっており、「恐竜王国」と呼ばれています。' },
@@ -6236,17 +6236,17 @@ draw = function () {
 // ==========================================
 const TOOLS = [
   {
-    id: 'totem', name: '不死のトーテム', price: 900, max: 3, color: '#FACC15',
-    desc: '持っていると、やられたときに自動で復活する（約2秒の無敵付き）。1個につき1回。',
+    id: 'totem', name: '不死のトーテム', price: 810, max: 3, color: '#FACC15',
+    desc: '持っていると、やられたときに自動で復活する（約2秒の無敵付きだぜ）。1個につき1回。',
     icon: '<svg viewBox="0 0 48 48"><rect x="14" y="5" width="20" height="38" rx="4" fill="#FACC15" stroke="#1E1E24" stroke-width="2"/><rect x="18" y="14" width="5" height="6" fill="#1E1E24"/><rect x="26" y="14" width="5" height="6" fill="#1E1E24"/><rect x="18" y="28" width="12" height="4" fill="#1E1E24"/><path d="M9 11l5 5M39 11l-5 5M24 1v4" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/></svg>'
   },
   {
-    id: 'smoke', name: '煙玉', price: 850, max: 10, color: '#CBD5E1',
-    desc: 'Zキーで使用。画面の敵の弾とレーザーを消し、約1.5秒の間ダメージを受けない。',
+    id: 'smoke', name: '煙玉', price: 250, max: 5, color: '#CBD5E1',
+    desc: 'Zキーで使用。画面の敵の弾とレーザーを消し、約1.5秒の間ダメージを受けないように設定下つもりだけど死がったらごめんちょ',
     icon: '<svg viewBox="0 0 48 48"><circle cx="16" cy="28" r="9" fill="#E2E8F0" stroke="#1E1E24" stroke-width="2"/><circle cx="28" cy="24" r="11" fill="#F1F5F9" stroke="#1E1E24" stroke-width="2"/><circle cx="34" cy="32" r="7" fill="#CBD5E1" stroke="#1E1E24" stroke-width="2"/></svg>'
   },
   {
-    id: 'flash', name: '閃光玉', price: 810, max: 5, color: '#FEF08A',
+    id: 'flash', name: '閃光玉', price: 300, max: 5, color: '#FEF08A',
     desc: 'Zキーで使用。画面内のコウモリ・鳥・妨害キャラなどの敵を一掃する。ボスには効かない。',
     icon: '<svg viewBox="0 0 48 48"><polygon points="24,3 29,18 44,14 33,25 44,36 29,32 24,45 19,32 4,36 15,25 4,14 19,18" fill="#FEF08A" stroke="#1E1E24" stroke-width="2"/></svg>'
   },
@@ -6256,7 +6256,7 @@ const TOOLS = [
     icon: '<svg viewBox="0 0 48 48"><rect x="13" y="5" width="22" height="38" fill="#FFFBEB" stroke="#1E1E24" stroke-width="2"/><path d="M24 12v24M17 20h14M18 30l6-6 6 6" stroke="#E11D48" stroke-width="3" stroke-linecap="round" fill="none"/></svg>'
   },
   {
-    id: 'magnet', name: '招福の磁石', price: 80, max: 1, color: '#60A5FA',
+    id: 'magnet', name: '招福の磁石', price: 80, max: 5, color: '#60A5FA',
     desc: 'Zキーで使用。10秒間、近くのコインが吸い寄せられる。',
     icon: '<svg viewBox="0 0 48 48"><path d="M10 8v18a14 14 0 0 0 28 0V8h-9v18a5 5 0 0 1-10 0V8z" fill="#EF4444" stroke="#1E1E24" stroke-width="2"/><rect x="10" y="8" width="9" height="8" fill="#F8FAFC" stroke="#1E1E24" stroke-width="2"/><rect x="29" y="8" width="9" height="8" fill="#F8FAFC" stroke="#1E1E24" stroke-width="2"/></svg>'
   }
@@ -6879,15 +6879,57 @@ SPR.shrapnel = (c, col, t) => {
 };
 
 // ---------- 弾の描画（軌跡・光・回転・きらめき） ----------
+// 動きのある弾は、1周ぶんを16コマにして覚えておく（値は1周の長さ[フレーム]）
+const SPR_ANIM = { shachi: 20.9, katsuo: 17.95, bell: 25.1, spear: 20.9, skull: 15.7, crystal: 15.7, coin: 17.45, bolt: 7.85, meteor: 15.7 };
+const SPR_SCALE = 2;
+const SPR_EXT = 40;
+const SPR_CACHE = {};
+let sprCacheCount = 0;
+
+function sprFrame(kind, col, t) {
+  const per = SPR_ANIM[kind];
+  const fi = per ? Math.floor(((t % per) / per) * 16) % 16 : 0;
+  const key = kind + '|' + col + '|' + fi;
+  let cv = SPR_CACHE[key];
+  if (!cv) {
+    if (sprCacheCount > 220) {
+      for (const k in SPR_CACHE) delete SPR_CACHE[k];
+      sprCacheCount = 0;
+    }
+    cv = document.createElement('canvas');
+    cv.width = cv.height = SPR_EXT * 2 * SPR_SCALE;
+    const c = cv.getContext('2d');
+    c.translate(SPR_EXT * SPR_SCALE, SPR_EXT * SPR_SCALE);
+    c.scale(SPR_SCALE, SPR_SCALE);
+    // 光の下地
+    const g = c.createRadialGradient(0, 0, 2, 0, 0, 20);
+    g.addColorStop(0, hexToRgba(col, 0.55));
+    g.addColorStop(0.5, hexToRgba(col, 0.22));
+    g.addColorStop(1, hexToRgba(col, 0));
+    c.fillStyle = g;
+    c.beginPath(); c.arc(0, 0, 20, 0, Math.PI * 2); c.fill();
+    (SPR[kind] || SPR.star)(c, col, per ? fi / 16 * per : 0);
+    SPR_CACHE[key] = cv;
+    sprCacheCount++;
+  }
+  return cv;
+}
+
 drawSigSprite = function (kind, col, rad, t) {
-  const f = SPR[kind] || SPR.star;
+  const cv = sprFrame(kind, col, t || 0);
+  const s = rad / 12 / SPR_SCALE;
   ctx.save();
-  ctx.scale(rad / 12, rad / 12);
-  ctx.shadowColor = col;
-  ctx.shadowBlur = projectiles.length > 40 ? 0 : 9;
-  f(ctx, col, t || 0);
+  ctx.scale(s, s);
+  ctx.drawImage(cv, -SPR_EXT * SPR_SCALE, -SPR_EXT * SPR_SCALE);
   ctx.restore();
 };
+
+const TRAIL_CACHE = {};
+function trailStyle(col, a) {
+  const q = Math.round(a * 20);
+  const k = col + q;
+  return TRAIL_CACHE[k] || (TRAIL_CACHE[k] = hexToRgba(col, q / 20 * 0.5));
+}
 
 drawSigSprites = function () {
   const spinKinds = ['star', 'boulder', 'urchin', 'ice', 'crystal', 'halo'];
@@ -6902,15 +6944,36 @@ drawSigSprites = function () {
     if (tr.length > 11) tr.shift();
     if (sy < -50 || sy > canvas.height + 50) continue;
 
-    // 軌跡
+    // 速い弾の光の帯（1枚の塗りだけなので軽い）
+    const spd = Math.hypot(p.vx, p.vy);
+    if (spd > 5 && !p.reflected) {
+      const ux = p.vx / spd, uy = p.vy / spd;
+      const len = Math.min(70, spd * 9), wd = (p.sz || 14) * 0.9;
+      const bx = p.x - ux * len, by = p.y - uy * len - cameraY;
+      const g = ctx.createLinearGradient(p.x, sy, bx, by);
+      g.addColorStop(0, hexToRgba(col, 0.55));
+      g.addColorStop(1, hexToRgba(col, 0));
+      ctx.save();
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(p.x - uy * wd, sy + ux * wd);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(p.x + uy * wd, sy - ux * wd);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 軌跡（弾が多いときは線の数を半分にして軽くする）
     ctx.save();
     ctx.lineCap = 'round';
-    for (let i = 1; i < tr.length; i++) {
+    const step = projectiles.length > 24 ? 2 : 1;
+    for (let i = 1; i < tr.length; i += step) {
       const a = i / tr.length;
-      ctx.strokeStyle = hexToRgba(col, a * 0.5);
+      ctx.strokeStyle = trailStyle(col, a);
       ctx.lineWidth = Math.max(1, a * (p.sz || 14) * 0.85);
       ctx.beginPath();
-      ctx.moveTo(tr[i - 1].x, tr[i - 1].y - cameraY);
+      ctx.moveTo(tr[Math.max(0, i - step)].x, tr[Math.max(0, i - step)].y - cameraY);
       ctx.lineTo(tr[i].x, tr[i].y - cameraY);
       ctx.stroke();
     }
@@ -6930,12 +6993,11 @@ drawSigSprites = function () {
       ctx.beginPath(); ctx.arc(0, 0, (p.sz || 14) + 6, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
     }
-    if (spinKinds.includes(p.sprite)) ctx.rotate(p._t * (p.sprite === 'star' ? 0.04 : 0.02));
+    if (spinKinds.includes(p.sprite)) ctx.rotate(p._t * ({ star: 0.08, halo: 0.08, urchin: 0.04 }[p.sprite] || 0.02));
     else if (dirKinds.includes(p.sprite)) ctx.rotate(Math.atan2(p.vy, p.vx));
     drawSigSprite(p.sprite, col, p.sz || 14, p._t);
     ctx.restore();
 
-    if (p._t % 6 === 0) spawnParticles(p.x, p.y, col, 1, false);
   }
 };
 
@@ -7442,8 +7504,123 @@ signatureBossAttack = function (pattern, b, px, py) {
   baseSignatureBossAttack2(pattern, b, px, py);
 };
 
+// パーティクル（四角い粒）の出し方:
+//   'light' = 通常は元どおり、ボス戦中は数を減らして少しだけ出す / 'boss' = ボス戦中は出さない
+//   'all' = ゲーム全体で出さない / 'off' = 常に制限なしで出す
+const PARTICLE_MODE = 'light';
+const BOSS_PARTICLE_RATE = 0.4;   // ボス戦中の粒の量（1で通常と同じ）
+const BOSS_PARTICLE_CAP = 40;     // ボス戦中に同時に出せる粒の上限
+function inBossFight() {
+  return !!activeBoss && activeBoss.active && activeBoss.hp > 0;
+}
+function particlesSuppressed() {
+  if (PARTICLE_MODE === 'all') return true;
+  return PARTICLE_MODE === 'boss' && inBossFight();
+}
+const baseSpawnParticles = spawnParticles;
+spawnParticles = function (x, y, color, count, isScreenSpace) {
+  if (particlesSuppressed()) return;
+  if (PARTICLE_MODE === 'light' && inBossFight()) {
+    if (particles.length > BOSS_PARTICLE_CAP) return;
+    count = Math.max(1, Math.ceil(count * BOSS_PARTICLE_RATE));
+  } else if (PARTICLE_MODE !== 'off' && particles.length > 160) {
+    return;
+  }
+  baseSpawnParticles(x, y, color, count, isScreenSpace);
+};
+
 const baseDrawFn8 = draw;
 draw = function () {
+  // すでに出ている粒も消す
+  if (particles.length && particlesSuppressed()) particles.length = 0;
   baseDrawFn8();
   drawBossFx();
 };
+
+// ==========================================
+// ストップボタン（ゲーム中、画面下の中央）。押すと、再開 / このゲームを終わる の2つが出る
+// Esc キーか P キーでも開閉できる。タブを切り替えたときも自動でストップする
+// ==========================================
+let paused = false;
+
+const pauseBtn = document.createElement('button');
+pauseBtn.id = 'pause-btn';
+pauseBtn.textContent = 'ストップ';
+pauseBtn.tabIndex = -1;
+pauseBtn.addEventListener('focus', () => pauseBtn.blur());
+pauseBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); openPause(); });
+
+const pauseScreen = document.createElement('div');
+pauseScreen.id = 'pause-screen';
+pauseScreen.className = 'overlay hidden';
+pauseScreen.innerHTML =
+  '<div class="title-badge" style="background:#00D2FF; color:#1E1E24;">PAUSE</div>' +
+  '<h2 style="font-size: 30px; font-weight: 900; margin: 0 0 22px 0;">ストップ中</h2>' +
+  '<div class="btn-group">' +
+  '<button class="btn btn-story" id="pause-resume" style="justify-content:center;">再開</button>' +
+  '<button class="btn btn-back" id="pause-quit" style="justify-content:center;">このゲームを終わる</button>' +
+  '</div>';
+document.getElementById('game-wrapper').appendChild(pauseBtn);
+document.getElementById('game-wrapper').appendChild(pauseScreen);
+
+function openPause() {
+  if (gameState !== 'playing' || paused) return;
+  paused = true;
+  pauseScreen.classList.remove('hidden');
+  pauseBtn.style.display = 'none';
+}
+function resumeGame() {
+  if (!paused) return;
+  paused = false;
+  pauseScreen.classList.add('hidden');
+}
+function quitGame() {
+  paused = false;
+  pauseScreen.classList.add('hidden');
+  totalCoins += stageCoins;          // ここまでに集めたコインは受け取れる
+  stageCoins = 0;
+  saveCoinAndSkinData();
+  gameState = 'gameover';
+  activeBoss = null;
+  hud.classList.add('hidden');
+  bossHud.classList.add('hidden');
+  jutsuBtn.style.display = 'none';
+  toolBtn.style.display = 'none';
+  pauseBtn.style.display = 'none';
+  bossCallouts.length = 0;
+  jfx.length = 0;
+  if (bossGifEl) bossGifEl.style.display = 'none';
+  backFromResult();
+}
+document.getElementById('pause-resume').addEventListener('click', resumeGame);
+document.getElementById('pause-quit').addEventListener('click', quitGame);
+
+window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  const esc = e.code === 'Escape' && tutorialScreen.classList.contains('hidden');
+  if (esc || e.code === 'KeyP') {
+    if (paused) resumeGame();
+    else openPause();
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && gameState === 'playing') openPause();
+});
+
+// ストップ中は、ゲームの進行も描画も、操作も止める
+const baseUpdateFn5 = update;
+update = function () { if (paused) return; baseUpdateFn5(); };
+const baseDrawFn9 = draw;
+draw = function () { if (paused) return; baseDrawFn9(); };
+const basePerformKick = performKick;
+performKick = function () { if (paused) return; basePerformKick(); };
+const basePerformSpinAttack = performSpinAttack;
+performSpinAttack = function () { if (paused) return; basePerformSpinAttack(); };
+const baseUseJutsu = useJutsu;
+useJutsu = function () { if (paused) return; baseUseJutsu(); };
+const baseUseTool = useTool;
+useTool = function () { if (paused) return; baseUseTool(); };
+
+setInterval(() => {
+  pauseBtn.style.display = (gameState === 'playing' && !paused) ? 'block' : 'none';
+}, 100);

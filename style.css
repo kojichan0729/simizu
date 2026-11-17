@@ -1011,3 +1011,27 @@
   color: #FDE047;
   align-self: center;
 }
+
+/* ストップボタン（ゲーム中、画面下の中央） */
+#pause-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 10px;
+  background: #FFFFFF;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  cursor: pointer;
+}
+
+#pause-screen {
+  z-index: 22;
+}
