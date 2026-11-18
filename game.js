@@ -4808,7 +4808,7 @@ const JUTSU_MAXLV = 5;
 const JUTSU = [
   {
     id: 'slow', name: '鈍足', price: 2000, color: '#00D2FF', sub: '時を鈍らせる',
-    desc: 'ゲームの世界を一定時間スローにする。敵も弾も、ゆっくり動く。',
+    desc: 'ゲームの世界を一定時間スローにする。敵も弾も、ゆっくり動く。最終強化では、時間が完全に止まる。',
     icon: '<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#00D2FF" stroke-width="2" stroke-dasharray="4 3"/><path d="M14 8h20M14 40h20M16 8c0 10 8 10 8 16s-8 6-8 16M32 8c0 10-8 10-8 16s8 6 8 16" fill="none" stroke="#E0F2FE" stroke-width="3" stroke-linecap="round"/><path d="M19 36c3-4 7-4 10 0z" fill="#00D2FF"/></svg>'
   },
   {
@@ -4825,14 +4825,15 @@ const JUTSU = [
 
 function jutsuStats(id, lv) {
   const k = lv - 1;
-  if (id === 'slow') return { dur: 3.5 + 0.8 * k, scale: 0.5 - 0.04 * k, cd: 18 - 1.5 * k };
-  if (id === 'guard') return { dur: 2.5 + 0.5 * k, cd: 16 - 1.5 * k };
-  return { dmg: lv >= 3 ? 2 : 1, windup: 80 - 6 * k, cd: 45 - 4 * k };
+  const fin = lv >= JUTSU_MAXLV ? 0.85 : 1;   // 最終進化は、クールダウンが少し短くなる
+  if (id === 'slow') return { dur: 4.0 + 1.0 * k, scale: lv >= JUTSU_MAXLV ? 0 : 0.5 - 0.04 * k, cd: (18 - 1.5 * k) * fin };
+  if (id === 'guard') return { dur: 2.5 + 0.5 * k, cd: (16 - 1.5 * k) * fin };
+  return { dmg: lv >= 3 ? 2 : 1, windup: 80 - 6 * k, cd: (45 - 4 * k) * fin };
 }
 
 function jutsuStatText(id, lv) {
   const s = jutsuStats(id, lv);
-  if (id === 'slow') return '持続 ' + s.dur.toFixed(1) + '秒 / 速度 x' + s.scale.toFixed(2) + ' / CD ' + s.cd.toFixed(1) + '秒';
+  if (id === 'slow') return '持続 ' + s.dur.toFixed(1) + '秒 / ' + (s.scale === 0 ? '時間停止' : '速度 x' + s.scale.toFixed(2)) + ' / CD ' + s.cd.toFixed(1) + '秒';
   if (id === 'guard') return '持続 ' + s.dur.toFixed(1) + '秒 / CD ' + s.cd.toFixed(1) + '秒';
   return 'ダメージ ' + s.dmg + ' / 溜め ' + (s.windup / 60).toFixed(1) + '秒 / CD ' + s.cd.toFixed(0) + '秒';
 }
@@ -4991,8 +4992,9 @@ function useJutsu() {
     jstate.cdMax = jstate.cd = Math.round((st.cd + st.dur) * 60);
     playSound('laserWarn');
     jfx.push({ type: 'ring', x: cx, y: cy, t: 0, total: 26, color: '#7DEBFF' });
-    jfx.push({ type: 'flash', t: 0, total: 8, color: '125,235,255' });
-    jfx.push({ type: 'banner', text: j.name, sub: j.sub, color: j.color, t: 0, total: 54 });
+    const stopped = st.scale === 0;
+    jfx.push({ type: 'flash', t: 0, total: stopped ? 14 : 8, color: stopped ? '255,255,255' : '125,235,255' });
+    jfx.push({ type: 'banner', text: stopped ? '時止め' : j.name, sub: stopped ? '世界が止まる' : j.sub, color: stopped ? '#E0F2FE' : j.color, t: 0, total: stopped ? 70 : 54 });
   } else if (j.id === 'guard') {
     jstate.guardT = Math.round(st.dur * 60);
     jstate.cdMax = jstate.cd = Math.round((st.cd + st.dur) * 60);
@@ -5163,7 +5165,7 @@ function bossGuarding(b) {
 function playerMeleeBoss() {
   const b = activeBoss;
   if (!b || b.hp <= 0 || !b.active || !isDirectBoss(b)) return;
-  b._gt = (b._gt || 0) + 1;
+  if (timeScale() > 0) b._gt = (b._gt || 0) + 1;
   if (b._meleeCd > 0) b._meleeCd--;
   if (player.spinTimer <= 0 || b._meleeCd > 0) return;
   const pcx = player.x + player.size / 2;
@@ -5366,6 +5368,13 @@ function drawJutsuFx() {
     g.addColorStop(1, 'rgba(0,110,255,' + (0.3 * a) + ')');
     c.fillStyle = g;
     c.fillRect(0, 0, W, H);
+    const timeStop = jstate.slowScale === 0;
+    if (timeStop) {
+      c.globalCompositeOperation = 'saturation';
+      c.fillStyle = 'rgba(128,128,128,' + (0.9 * a) + ')';
+      c.fillRect(0, 0, W, H);
+      c.globalCompositeOperation = 'source-over';
+    }
     c.translate(pcx, pcy);
     c.strokeStyle = 'rgba(125,235,255,0.9)';
     c.lineWidth = 2;
@@ -5382,7 +5391,7 @@ function drawJutsuFx() {
     }
     c.lineWidth = 2.5;
     c.beginPath(); c.moveTo(0, 0);
-    c.lineTo(Math.cos(T * 0.9 - 1.57) * 26, Math.sin(T * 0.9 - 1.57) * 26);
+    c.lineTo(Math.cos((timeStop ? 0 : T * 0.9) - 1.57) * 26, Math.sin((timeStop ? 0 : T * 0.9) - 1.57) * 26);
     c.stroke();
     c.restore();
   }
@@ -6236,27 +6245,27 @@ draw = function () {
 // ==========================================
 const TOOLS = [
   {
-    id: 'totem', name: '不死のトーテム', price: 810, max: 3, color: '#FACC15',
-    desc: '持っていると、やられたときに自動で復活する（約2秒の無敵付きだぜ）。1個につき1回。',
+    id: 'totem', name: '不死のトーテム', price: 500, max: 3, color: '#FACC15',
+    desc: '持っていると、やられたときに自動で復活する（約2秒の無敵付き）。1個につき1回。',
     icon: '<svg viewBox="0 0 48 48"><rect x="14" y="5" width="20" height="38" rx="4" fill="#FACC15" stroke="#1E1E24" stroke-width="2"/><rect x="18" y="14" width="5" height="6" fill="#1E1E24"/><rect x="26" y="14" width="5" height="6" fill="#1E1E24"/><rect x="18" y="28" width="12" height="4" fill="#1E1E24"/><path d="M9 11l5 5M39 11l-5 5M24 1v4" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/></svg>'
   },
   {
-    id: 'smoke', name: '煙玉', price: 250, max: 5, color: '#CBD5E1',
-    desc: 'Zキーで使用。画面の敵の弾とレーザーを消し、約1.5秒の間ダメージを受けないように設定下つもりだけど死がったらごめんちょ',
+    id: 'smoke', name: '煙玉', price: 200, max: 5, color: '#CBD5E1',
+    desc: 'Zキーで使用。画面の敵の弾とレーザーを消し、約1.5秒の間ダメージを受けない。',
     icon: '<svg viewBox="0 0 48 48"><circle cx="16" cy="28" r="9" fill="#E2E8F0" stroke="#1E1E24" stroke-width="2"/><circle cx="28" cy="24" r="11" fill="#F1F5F9" stroke="#1E1E24" stroke-width="2"/><circle cx="34" cy="32" r="7" fill="#CBD5E1" stroke="#1E1E24" stroke-width="2"/></svg>'
   },
   {
-    id: 'flash', name: '閃光玉', price: 300, max: 5, color: '#FEF08A',
+    id: 'flash', name: '閃光玉', price: 250, max: 5, color: '#FEF08A',
     desc: 'Zキーで使用。画面内のコウモリ・鳥・妨害キャラなどの敵を一掃する。ボスには効かない。',
     icon: '<svg viewBox="0 0 48 48"><polygon points="24,3 29,18 44,14 33,25 44,36 29,32 24,45 19,32 4,36 15,25 4,14 19,18" fill="#FEF08A" stroke="#1E1E24" stroke-width="2"/></svg>'
   },
   {
-    id: 'charm', name: '跳躍符', price: 100, max: 5, color: '#FB7185',
+    id: 'charm', name: '跳躍符', price: 150, max: 5, color: '#FB7185',
     desc: 'Zキーで使用。空中でも、その場でもう一度ジャンプできる。',
     icon: '<svg viewBox="0 0 48 48"><rect x="13" y="5" width="22" height="38" fill="#FFFBEB" stroke="#1E1E24" stroke-width="2"/><path d="M24 12v24M17 20h14M18 30l6-6 6 6" stroke="#E11D48" stroke-width="3" stroke-linecap="round" fill="none"/></svg>'
   },
   {
-    id: 'magnet', name: '招福の磁石', price: 80, max: 5, color: '#60A5FA',
+    id: 'magnet', name: '招福の磁石', price: 180, max: 5, color: '#60A5FA',
     desc: 'Zキーで使用。10秒間、近くのコインが吸い寄せられる。',
     icon: '<svg viewBox="0 0 48 48"><path d="M10 8v18a14 14 0 0 0 28 0V8h-9v18a5 5 0 0 1-10 0V8z" fill="#EF4444" stroke="#1E1E24" stroke-width="2"/><rect x="10" y="8" width="9" height="8" fill="#F8FAFC" stroke="#1E1E24" stroke-width="2"/><rect x="29" y="8" width="9" height="8" fill="#F8FAFC" stroke="#1E1E24" stroke-width="2"/></svg>'
   }
@@ -7538,6 +7547,208 @@ draw = function () {
 };
 
 // ==========================================
+// エクストラボス「否愚魔」（北海道・全ステージ制覇後に出現）
+//   ・最初からボス戦。体力12
+//   ・これまでの全ボスの全技を、ランダムに繰り出す
+//   ・技を出している間、その技のボスの「魂」が灰色に透けて背後に浮かぶ
+// ==========================================
+const EXTRA_BOSS = '否愚魔';
+STORY_DATA.extra = [{
+  name: '北海道', region: 'EXTRA BOSS', goal: 10, boss: EXTRA_BOSS,
+  trivia: 'ヒグマは、日本では北海道だけに生息する最大の陸上動物。全ステージを制覇した君に、最後の試練が現れた！'
+}];
+BOSS_ORDER.push(EXTRA_BOSS);
+BOSS_THEMES[EXTRA_BOSS] = mkTheme('#78350F', '#B45309', '#FDBA74', '#EA580C');
+const BOSS_HP_OVERRIDE = {};
+BOSS_HP_OVERRIDE[EXTRA_BOSS] = 12;
+
+// 全ボスの全技（技名・弾の見た目はそのまま。色はそのボス本来の色）
+BOSS_MOVES[EXTRA_BOSS] = [];
+BOSS_ORDER.forEach(n => {
+  if (n === EXTRA_BOSS) return;
+  (BOSS_MOVES[n] || []).forEach(m => BOSS_MOVES[EXTRA_BOSS].push({ m: m.m, n: m.n, s: m.s, src: n }));
+});
+
+function registerBossGif(name, path) {
+  if (BOSS_GIF_IMGS[name]) return;
+  const img = document.createElement('img');
+  img.className = 'boss-gif-src';
+  img.alt = '';
+  const cands = [path, path.split('/').pop(), 'boss_gif/' + name + '.gif', name + '.gif'];
+  let ci = 0;
+  img.addEventListener('error', () => {
+    ci++;
+    if (ci < cands.length) img.src = cands[ci];
+    else img.dataset.failed = '1';
+  });
+  img.src = cands[0];
+  document.body.appendChild(img);
+  BOSS_GIFS[name] = path;
+  BOSS_GIF_IMGS[name] = img;
+}
+registerBossGif(EXTRA_BOSS, 'boss_gif/higuma.gif');
+
+// 体力12
+const baseEaseBoss = easeBossDifficulty;
+easeBossDifficulty = function () {
+  const b = activeBoss;
+  const first = !!b && !b.eased;
+  baseEaseBoss();
+  if (first && b && BOSS_HP_OVERRIDE[b.name]) {
+    b.maxHp = b.hp = BOSS_HP_OVERRIDE[b.name];
+    updateBossHpUi();
+  }
+};
+
+// 技の選び方（全技からランダム）
+const baseBossAttackV2 = bossAttackV2;
+bossAttackV2 = function (b, px, py) {
+  if (b.name !== EXTRA_BOSS) { baseBossAttackV2(b, px, py); return; }
+  const moves = BOSS_MOVES[EXTRA_BOSS];
+  let i;
+  do { i = Math.floor(Math.random() * moves.length); } while (i === b._lastMv && moves.length > 1);
+  b._lastMv = i;
+  const m = moves[i];
+  const col = (BOSS_THEMES[m.src] || DEFAULT_THEME).orb;
+  const cfg = { s: m.s, n: m.n, col: col };
+  const dur = MOVES[m.m](b, cfg, Math.min(bossRank(b), 16), px, py) || 150;
+  let timer = Math.max(150, dur);
+  if (b.hp <= 6) timer = Math.round(timer * 0.8);   // 体力が半分以下で、攻撃の間隔が短くなる
+  b.shootTimer = timer;
+  b._charge = 32;
+  b._chargeCol = col;
+  bossCallouts.push({ text: m.n, col: col, t: 0, total: 80 });
+  b._souls = [m.src].concat((b._souls || []).filter(n => n !== m.src)).slice(0, 3);
+  b._soulT = b._soulTotal = dur + 30;
+};
+
+// ---------- 魂の描画 ----------
+function drawSoul(name, x, y, scale, alpha, T) {
+  const g = getBossGif(name);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.globalAlpha = alpha;
+  if (g && 'filter' in ctx) {
+    const h = 112 * scale;
+    const w = h * g.naturalWidth / g.naturalHeight;
+    ctx.filter = 'grayscale(1) brightness(1.25)';
+    ctx.drawImage(g, -w / 2, -h / 2, w, h);
+    ctx.filter = 'none';
+  } else {
+    ctx.scale(scale, scale);
+    const wv = Math.sin(T * 3) * 3;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-34, 30); ctx.lineTo(-34, -6); ctx.quadraticCurveTo(-34, -40, 0, -40);
+    ctx.quadraticCurveTo(34, -40, 34, -6); ctx.lineTo(34, 30);
+    ctx.quadraticCurveTo(26, 22 + wv, 17, 30); ctx.quadraticCurveTo(8, 38 - wv, 0, 30);
+    ctx.quadraticCurveTo(-8, 22 + wv, -17, 30); ctx.quadraticCurveTo(-26, 38 - wv, -34, 30);
+    ctx.closePath();
+    const gr = ctx.createLinearGradient(0, -40, 0, 36);
+    gr.addColorStop(0, 'rgba(228,231,238,0.95)');
+    gr.addColorStop(1, 'rgba(150,155,165,0.15)');
+    ctx.fillStyle = gr;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(90,95,105,0.85)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(205,210,220,0.9)';
+    ctx.beginPath(); ctx.moveTo(-22, -34); ctx.lineTo(-30, -52); ctx.lineTo(-10, -38); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(22, -34); ctx.lineTo(30, -52); ctx.lineTo(10, -38); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(35,38,48,0.85)';
+    ctx.beginPath(); ctx.ellipse(-12, -10, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(12, -10, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(35,38,48,0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-9, 8); ctx.quadraticCurveTo(0, 3, 9, 8); ctx.stroke();
+  }
+  ctx.restore();
+  // 名前と、揺らめく人魂
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'center';
+  ctx.font = '900 10px "M PLUS Rounded 1c", sans-serif';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(30,32,42,0.85)';
+  ctx.strokeText(name, x, y + 44 * scale + 8);
+  ctx.fillStyle = 'rgba(232,234,242,0.95)';
+  ctx.fillText(name, x, y + 44 * scale + 8);
+  ctx.fillStyle = 'rgba(210,214,226,0.7)';
+  for (let k = 0; k < 3; k++) {
+    const a = T * 1.4 + k * 2.1;
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(a) * 46 * scale, y + Math.sin(a * 1.3) * 22 * scale - 10, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawExtraSouls() {
+  const b = activeBoss;
+  if (gameState !== 'playing' || !b || b.name !== EXTRA_BOSS || !b.active || b.hp <= 0 || !(b._soulT > 0)) return;
+  b._soulT--;
+  const total = b._soulTotal || 1;
+  const a = Math.max(0, Math.min(1, (total - b._soulT) / 18, b._soulT / 18));
+  const T = Date.now() * 0.002;
+  const offs = [0, -80, 80];
+  const alphas = [0.6, 0.3, 0.3];
+  (b._souls || []).forEach((name, i) => {
+    drawSoul(name, b.x + offs[i], b.y - cameraY - 92 + (i ? 22 : 0) + Math.sin(T * 2 + i * 2) * 5, i === 0 ? 1.25 : 0.9, a * alphas[i], T + i);
+  });
+}
+const baseDrawFn10 = draw;
+draw = function () {
+  baseDrawFn10();
+  drawExtraSouls();
+};
+
+// ---------- 出現条件と、ステージ選択画面のボタン ----------
+function allStoryCleared() {
+  return ['japan', 'world', 'space'].every(a => (storyProgress[a] || 0) >= STORY_DATA[a].length);
+}
+const extraBtn = document.createElement('button');
+extraBtn.id = 'extra-boss-btn';
+extraBtn.className = 'btn';
+extraBtn.innerHTML = '<span>EXTRA BOSS  北海道</span><span class="stage-tag">否愚魔</span>';
+extraBtn.addEventListener('click', () => startGame('story', 'extra', 0));
+document.getElementById('story-stage-list').before(extraBtn);
+function refreshExtraButton() {
+  extraBtn.style.display = allStoryCleared() ? 'flex' : 'none';
+}
+const baseRenderStoryList = renderStoryList;
+renderStoryList = function () {
+  baseRenderStoryList();
+  refreshExtraButton();
+};
+const baseSwitchStoryTab = switchStoryTab;
+switchStoryTab = function (arc) {
+  baseSwitchStoryTab(arc === 'extra' ? 'japan' : arc);
+};
+const baseStartGame4 = startGame;
+startGame = function (...args) {
+  baseStartGame4(...args);
+  if (currentDifficulty === 'story' && currentStoryArc === 'extra') {
+    hudStage.textContent = 'EXTRA 北海道';
+    if (stageIntro) {
+      stageIntro.title = 'EXTRA: 北海道';
+      stageIntro.sub = 'EXTRA BOSS  BOSS: ' + EXTRA_BOSS;
+    }
+  }
+};
+
+// ==========================================
+// コインの上限（カンスト）: 99999
+// 保存のたびに上限を超えた分を切り捨てる。すでに保存されている値も、起動時に上限へそろえる
+// ==========================================
+const COIN_CAP = 99999;
+const baseSaveCoinAndSkinData = saveCoinAndSkinData;
+saveCoinAndSkinData = function () {
+  if (totalCoins > COIN_CAP) totalCoins = COIN_CAP;
+  baseSaveCoinAndSkinData();
+};
+saveCoinAndSkinData();
+
+// ==========================================
 // ストップボタン（ゲーム中、画面下の中央）。押すと、再開 / このゲームを終わる の2つが出る
 // Esc キーか P キーでも開閉できる。タブを切り替えたときも自動でストップする
 // ==========================================
@@ -7623,4 +7834,221 @@ useTool = function () { if (paused) return; baseUseTool(); };
 
 setInterval(() => {
   pauseBtn.style.display = (gameState === 'playing' && !paused) ? 'block' : 'none';
+}, 100);
+
+
+/* SPLIT4 */
+// ==========================================
+// エクストラボス「否愚魔」の調整
+// ==========================================
+const EXTRA_FREE_CLIMB_M = 50;      // スタートから、何mは障害物なしで登らせるか
+const EXTRA_CLIMB_SPEED = 0.5;      // 否愚魔が登る速さ（1フレームあたりのpx）。体力が減るほど少し速くなる
+const EXTRA_VIGNETTE = 0.6;         // 戦闘中の画面の四隅の暗さ（0〜1）
+const EXTRA_REQUIRE_CLEAR = true;   // true: 全ステージ制覇後のみ北海道が否愚魔戦になる / false: 常に否愚魔戦（動作確認用）
+
+// 戦闘開始位置: ボス戦は「ゴールの460px手前」で始まるので、そこが50mの地点になるようゴールを置く
+STORY_DATA.extra[0].goal = Math.ceil(EXTRA_FREE_CLIMB_M + 460 / PIXELS_PER_METER);
+
+function isExtraStage() {
+  return currentDifficulty === 'story' && currentStoryArc === 'extra';
+}
+function exFight() {
+  return isExtraStage() && gameState === 'playing' && !!activeBoss &&
+    activeBoss.name === EXTRA_BOSS && activeBoss.active && activeBoss.hp > 0;
+}
+
+// ---------- 選択画面のボタン（ポップアップ）を出さない ----------
+extraBtn.remove();
+refreshExtraButton = function () {};
+
+// 全ステージ制覇後は、日本列島篇の1番「北海道」を押すと、そのまま否愚魔のステージになる
+// （見た目は普通の北海道。障害物は何もなく、登っていくとボス戦が始まる）
+
+// ---------- 最初の50mは何も出さない ----------
+const baseInitStage2 = initStage;
+initStage = function (config) {
+  baseInitStage2(config);
+  if (config.isStory && config.storyArc === 'extra') {
+    spikeBands = [];
+    bats = [];
+    birds = [];
+  }
+};
+
+// ---------- セリフ ----------
+const exDlg = { q: [], cur: null, t: 0 };
+function exSay(text, urgent) {
+  const d = { text: text, hold: 130 };
+  if (urgent) {
+    exDlg.q = [d];
+    exDlg.cur = null;
+  } else {
+    if (exDlg.q.length >= 2) exDlg.q.shift();
+    exDlg.q.push(d);
+  }
+}
+const EX_TAUNTS = [
+  '私は世界を追っていた',
+  '仲間とともに',
+  '元来私がはじめに敗れるはずだった。',
+  '先逝く者たちが私に最後に力を貸す',
+  'これで終わらせる',
+  '”何度”来ようとも',
+  'さらば愛しき友たちよ'
+];
+const EX_HP_LINES = {
+  10: '嗚呼、まだ負けられん',
+  6: '貴様は今何度目だ？',
+  3: 'まだだ……まだ、私は倒れぬ！',
+  1: '嗚呼、嗚呼、嗚呼すまない皆'
+};
+
+function wrapJa(text, maxW) {
+  const lines = [];
+  let cur = '';
+  for (const ch of text) {
+    if (ctx.measureText(cur + ch).width > maxW) { lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function drawExDialogue() {
+  if (!exDlg.cur) {
+    if (!exDlg.q.length) return;
+    exDlg.cur = exDlg.q.shift();
+    exDlg.t = 0;
+  }
+  const d = exDlg.cur;
+  exDlg.t++;
+  const typeEnd = d.text.length * 2;
+  const end = typeEnd + d.hold;
+  if (exDlg.t >= end) { exDlg.cur = null; return; }
+  const a = Math.max(0, Math.min(1, exDlg.t / 8, (end - exDlg.t) / 14));
+  const n = Math.min(d.text.length, Math.floor(exDlg.t / 2));
+
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.lineJoin = 'round';
+  // 名前札
+  ctx.fillStyle = '#EA580C';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 2;
+  ctx.fillRect(30, 600, 66, 20);
+  ctx.strokeRect(30, 600, 66, 20);
+  ctx.textAlign = 'center';
+  ctx.font = '900 13px "M PLUS Rounded 1c", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('否愚魔', 63, 615);
+  // ウィンドウ
+  ctx.fillStyle = 'rgba(8,8,12,0.9)';
+  ctx.fillRect(24, 620, 372, 56);
+  ctx.strokeStyle = '#EA580C';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(24, 620, 372, 56);
+  // 文字
+  ctx.textAlign = 'left';
+  ctx.font = '900 14px "M PLUS Rounded 1c", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  const lines = wrapJa(d.text, 346);
+  let left = n;
+  lines.forEach((ln, i) => {
+    const s = ln.slice(0, Math.max(0, Math.min(ln.length, left)));
+    left -= ln.length;
+    ctx.fillText(s, 38, 644 + i * 20);
+  });
+  ctx.restore();
+}
+
+function drawExVignette() {
+  const b = activeBoss;
+  b._dark = Math.min(1, (b._dark || 0) + 1 / 60);
+  const v = ctx.createRadialGradient(210, 360, 160, 210, 360, 430);
+  v.addColorStop(0, 'rgba(0,0,0,0)');
+  v.addColorStop(1, 'rgba(0,0,0,' + (EXTRA_VIGNETTE * b._dark) + ')');
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// 攻撃のたびに、ときどきしゃべる
+const baseBossAttackV2b = bossAttackV2;
+bossAttackV2 = function (b, px, py) {
+  baseBossAttackV2b(b, px, py);
+  if (b.name !== EXTRA_BOSS) return;
+  b._atkN = (b._atkN || 0) + 1;
+  if (b._atkN % 2 === 0) {
+    let i;
+    do { i = Math.floor(Math.random() * EX_TAUNTS.length); } while (i === b._lastTaunt && EX_TAUNTS.length > 1);
+    b._lastTaunt = i;
+    exSay(EX_TAUNTS[i]);
+  }
+};
+
+// ---------- 開始時の処理 ----------
+const baseStartGame5 = startGame;
+startGame = function (...args) {
+  if (args[0] === 'story' && args[1] === 'japan' && args[2] === 0 &&
+      (!EXTRA_REQUIRE_CLEAR || allStoryCleared())) {
+    args = ['story', 'extra', 0];
+  }
+  baseStartGame5(...args);
+  exDlg.q = [];
+  exDlg.cur = null;
+  exDlg.t = 0;
+  document.body.classList.toggle('extra-nohud', isExtraStage());
+  document.body.classList.remove('extra-dark');
+  if (isExtraStage()) {
+    // 最初は何も予告しない。ボスの登場演出は、戦闘が始まるときに出す
+    hudStage.textContent = '1.北海道';
+    stageIntro = { t: 100, total: 100, boss: null, title: '1. 北海道', sub: '北海道地方' };
+  }
+};
+
+// ---------- 毎フレーム ----------
+const baseUpdateFn6 = update;
+update = function () {
+  const pre = isExtraStage() && gameState === 'playing';
+  if (pre && activeBoss && !activeBoss.active) {
+    // 戦闘が始まるまでは、敵を一切出さない
+    birdSpawnTimer = 999;
+    ambusherSpawnTimer = 999;
+    enemySpawnTimer = 999;
+  }
+  baseUpdateFn6();
+  if (paused || !exFight()) return;
+
+  const b = activeBoss;
+  if (!b._exIntro) {
+    b._exIntro = true;
+    b._exHp = b.hp;
+    stageIntro = { t: 150, total: 150, boss: EXTRA_BOSS, title: '否愚魔', sub: 'EXTRA BOSS' };
+    exSay('グルルル……よくぞ、ここまで登ってきた。');
+    exSay('ここから先は我が縄張り。生きて帰れると思うな。');
+  }
+  if (b.hp < b._exHp) {
+    b._exHp = b.hp;
+    if (EX_HP_LINES[b.hp]) exSay(EX_HP_LINES[b.hp], true);
+  }
+
+  // 少しずつ上へ登る（ゴールの位置ごと上がるので、カメラも一緒に上がる）
+  const lost = b.maxHp - b.hp;
+  goalY -= (EXTRA_CLIMB_SPEED + lost * 0.03) * Math.max(0, timeScale());
+  b.y = goalY + 110;
+};
+
+const baseDrawFn11 = draw;
+draw = function () {
+  if (paused) return;
+  baseDrawFn11();
+  if (exFight()) {
+    drawExVignette();
+    drawExDialogue();
+  }
+};
+
+// 戦闘中は、画面外（ページ背景）も黒くする
+setInterval(() => {
+  document.body.classList.toggle('extra-dark', exFight());
+  document.body.classList.toggle('extra-nohud', isExtraStage() && gameState === 'playing');
 }, 100);

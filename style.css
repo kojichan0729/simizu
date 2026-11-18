@@ -1035,3 +1035,35 @@
 #pause-screen {
   z-index: 22;
 }
+
+/* エクストラボスのボタン（全ステージ制覇後に、ストーリー選択画面に出る） */
+#extra-boss-btn {
+  display: none;
+  width: 100%;
+  margin-bottom: 8px;
+  background: #1E1E24;
+  color: #FFD600;
+  border-color: #FFD600;
+  box-shadow: 4px 4px 0px #FF3B6B;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* エクストラボス戦: 体力バーを隠し、画面外を黒くする */
+body {
+  transition: background-color 1.2s;
+}
+
+body.extra-nohud #boss-hud {
+  display: none !important;
+}
+
+body.extra-dark {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+body.extra-dark #game-wrapper {
+  border-color: #4B4B58;
+  box-shadow: 0 0 36px rgba(255, 59, 107, 0.35);
+}
