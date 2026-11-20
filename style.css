@@ -1067,3 +1067,49 @@ body.extra-dark #game-wrapper {
   border-color: #4B4B58;
   box-shadow: 0 0 36px rgba(255, 59, 107, 0.35);
 }
+
+/* 否愚魔のセリフ: 画面の外（ページ下部）に、明朝体で */
+#ex-dialogue {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding: 16px 24px 20px;
+  text-align: center;
+  font-family: 'Shippori Mincho', 'Yu Mincho', '游明朝', 'Hiragino Mincho ProN', 'HGS明朝E', 'MS PMincho', 'Noto Serif JP', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.6;
+  color: #F5F5F5;
+  text-shadow: 0 0 8px rgba(234, 88, 12, 0.7);
+  background: linear-gradient(to top, #000000 65%, rgba(0, 0, 0, 0));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  min-height: 24px;
+}
+
+/* ENDLESS STORY THE FANTASY（解禁後に、タイトル画面へ出る） */
+#fantasy-btn {
+  display: none;
+  background: linear-gradient(90deg, #7C3AED, #EC4899);
+  color: #FFFFFF;
+}
+
+body.fantasy-on #fantasy-btn {
+  display: flex;
+}
+
+body.fantasy-on #screen-title .btn-group {
+  gap: 8px;
+}
+
+body.fantasy-on #screen-title .btn {
+  padding: 9px 14px;
+}
+
+body.fantasy-on #screen-title .controls-hint {
+  display: none;
+}

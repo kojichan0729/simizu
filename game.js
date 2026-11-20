@@ -6245,7 +6245,7 @@ draw = function () {
 // ==========================================
 const TOOLS = [
   {
-    id: 'totem', name: '不死のトーテム', price: 500, max: 3, color: '#FACC15',
+    id: 'totem', name: '不死のトーテム', price: 500, max: 99, color: '#FACC15',
     desc: '持っていると、やられたときに自動で復活する（約2秒の無敵付き）。1個につき1回。',
     icon: '<svg viewBox="0 0 48 48"><rect x="14" y="5" width="20" height="38" rx="4" fill="#FACC15" stroke="#1E1E24" stroke-width="2"/><rect x="18" y="14" width="5" height="6" fill="#1E1E24"/><rect x="26" y="14" width="5" height="6" fill="#1E1E24"/><rect x="18" y="28" width="12" height="4" fill="#1E1E24"/><path d="M9 11l5 5M39 11l-5 5M24 1v4" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/></svg>'
   },
@@ -7888,19 +7888,19 @@ function exSay(text, urgent) {
   }
 }
 const EX_TAUNTS = [
-  '私は世界を追っていた',
-  '仲間とともに',
-  '元来私がはじめに敗れるはずだった。',
-  '先逝く者たちが私に最後に力を貸す',
-  'これで終わらせる',
-  '”何度”来ようとも',
-  'さらば愛しき友たちよ'
+  '逃げ場など、どこにもないぞ。',
+  'その程度か、小僧。',
+  '我は逃げぬ。さあ、上へ来い。',
+  'かつて挑んだ者どもの魂が、我に力を貸す。',
+  '壁を蹴るしか能がないのか？',
+  '落ちれば、そこで終わりだ。',
+  'グルルル……もっと足掻いてみせろ。'
 ];
 const EX_HP_LINES = {
-  10: '嗚呼、まだ負けられん',
-  6: '貴様は今何度目だ？',
-  3: 'まだだ……まだ、私は倒れぬ！',
-  1: '嗚呼、嗚呼、嗚呼すまない皆'
+  10: 'ぬっ……？ 少しはやるようだな。',
+  6: '……面白い。ここからは本気だ。',
+  3: 'まだだ……まだ、我は倒れぬ！',
+  1: 'ば、馬鹿な……この我が……！'
 };
 
 function wrapJa(text, maxW) {
@@ -8052,3 +8052,1253 @@ setInterval(() => {
   document.body.classList.toggle('extra-dark', exFight());
   document.body.classList.toggle('extra-nohud', isExtraStage() && gameState === 'playing');
 }, 100);
+
+
+/* SPLIT5 */
+// ==========================================
+// 否愚魔 第二形態
+// ==========================================
+const EX2_HP = 14;                 // 第二形態の体力
+const EX2_COL = '#EA580C';
+const EX_CR_END = 100;             // ヒビが入る時間（フレーム）
+const EX_SH_END = 190;             // 割れて砕け散る時間
+const EX_AB_END = 370;             // 全ボスが吸い込まれる時間（終わると第二形態が始まる）
+const EX_P2_NAME = '否愚魔2';
+registerBossGif(EX_P2_NAME, 'boss_gif/higuma2.gif');   // 第二形態の画像
+
+let exPhase = 1;                   // 1: 第一形態 / 'break': 変身中 / 2: 第二形態
+let exSkin = 1;                    // 表示する画像（1 or 2）
+let exBreakT = 0;
+let exShards = [];
+let exCracks = [];
+let exHoles = [];
+let exBeams = [];
+let exBuf = null;
+const EX_HP_LINES_P1 = Object.assign({}, EX_HP_LINES);
+const EX_HP_LINES_P2 = {
+  10: 'ほう……ここまで我に迫るか。',
+  6: '否……我は負けぬ。山の主が、負けてなるものか！',
+  3: 'ぐ、ぐぬぬ……！',
+  1: 'まさか……この我が……。'
+};
+const EX2_TAUNTS = [
+  '壁など、我には紙も同じだ。',
+  '喰らえ、すべての魂の怒りを。',
+  '逃げ場は、我が穿つ。',
+  'この山ごと、砕いてくれる。',
+  '足掻け。足掻け。足掻け！',
+  'まだ登るか、愚かな小僧よ。'
+];
+
+// 変身中も「戦闘中」として扱う（体力0でも画面の演出を続ける）
+exFight = function () {
+  return isExtraStage() && gameState === 'playing' && !!activeBoss &&
+    activeBoss.name === EXTRA_BOSS && activeBoss.active && (activeBoss.hp > 0 || exPhase === 'break');
+};
+
+// ---------- 画像（第一形態 / 第二形態）----------
+const baseGetBossGif = getBossGif;
+getBossGif = function (name) {
+  if (name === EXTRA_BOSS && exSkin === 2) {
+    const g = baseGetBossGif(EX_P2_NAME);
+    if (g) return g;
+  }
+  return baseGetBossGif(name);
+};
+
+// ---------- セリフ: 画面の外に、明朝体で ----------
+const exDlgEl = document.createElement('div');
+exDlgEl.id = 'ex-dialogue';
+document.body.appendChild(exDlgEl);
+
+drawExDialogue = function () {
+  if (!exDlg.cur) {
+    if (!exDlg.q.length) { exDlgEl.style.opacity = '0'; return; }
+    exDlg.cur = exDlg.q.shift();
+    exDlg.t = 0;
+  }
+  const d = exDlg.cur;
+  exDlg.t++;
+  const typeEnd = d.text.length * 3;
+  const end = typeEnd + d.hold;
+  if (exDlg.t >= end) { exDlg.cur = null; exDlgEl.style.opacity = '0'; return; }
+  const a = Math.max(0, Math.min(1, exDlg.t / 8, (end - exDlg.t) / 14));
+  exDlgEl.textContent = d.text.slice(0, Math.min(d.text.length, Math.floor(exDlg.t / 3)));
+  exDlgEl.style.opacity = String(a);
+};
+
+// ---------- ダメージ無効（変身中）と、第一形態撃破の横取り ----------
+const baseBossTakeDamage2 = bossTakeDamage;
+bossTakeDamage = function (n) {
+  if (exPhase === 'break' && activeBoss && activeBoss.name === EXTRA_BOSS) return;
+  baseBossTakeDamage2(n);
+};
+
+const baseShowResult4 = showResult;
+showResult = function (isClear) {
+  if (isClear && gameState === 'playing' && isExtraStage() && activeBoss && activeBoss.name === EXTRA_BOSS) {
+    if (exPhase === 1) { exBeginBreak(); return; }
+    if (exPhase === 'break') return;
+  }
+  baseShowResult4(isClear);
+};
+
+// ---------- 変身 ----------
+function exBossDims() {
+  const g = getBossGif(EXTRA_BOSS);
+  if (g) {
+    const h = 112;
+    return { g: g, w: h * g.naturalWidth / g.naturalHeight, h: h };
+  }
+  return { g: null, w: 100, h: 100 };
+}
+
+function exBodyFallback(c, skin) {
+  const body = skin === 2 ? '#4C1D95' : '#78350F';
+  const face = skin === 2 ? '#7C3AED' : '#B45309';
+  c.lineJoin = 'round';
+  c.lineWidth = 3;
+  c.strokeStyle = INK3;
+  c.fillStyle = body;
+  c.beginPath(); c.arc(-30, -34, 12, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.beginPath(); c.arc(30, -34, 12, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.beginPath(); c.ellipse(0, -4, 46, 42, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = face;
+  c.beginPath(); c.ellipse(0, 12, 22, 16, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = INK3;
+  c.beginPath(); c.ellipse(0, 5, 6, 4, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#FFFFFF';
+  c.beginPath(); c.ellipse(-16, -12, 8, 7, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.beginPath(); c.ellipse(16, -12, 8, 7, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = '#DC2626';
+  c.beginPath(); c.arc(-14, -11, 3.5, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(14, -11, 3.5, 0, Math.PI * 2); c.fill();
+  c.lineWidth = 4;
+  c.beginPath(); c.moveTo(-28, -26); c.lineTo(-8, -18); c.moveTo(28, -26); c.lineTo(8, -18); c.stroke();
+  c.fillStyle = '#FFFFFF';
+  c.lineWidth = 2;
+  c.beginPath(); c.moveTo(-8, 22); c.lineTo(-3, 22); c.lineTo(-5, 30); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(8, 22); c.lineTo(3, 22); c.lineTo(5, 30); c.closePath(); c.fill(); c.stroke();
+}
+
+function drawExBossBody(c, dims, skin) {
+  if (dims.g) c.drawImage(dims.g, -dims.w / 2, -dims.h / 2, dims.w, dims.h);
+  else exBodyFallback(c, skin);
+}
+
+function exBeginBreak() {
+  const b = activeBoss;
+  exPhase = 'break';
+  exBreakT = 0;
+  b.hp = 1;
+  b._exHp = 1;
+  projectiles = [];
+  bossLasers = [];
+  bossQueue.length = 0;
+  bossBombs.length = 0;
+  exHoles = [];
+  exBeams = [];
+  exShards = [];
+  b.shootTimer = 99999;
+  b._pt = 99999;
+  b._charge = 0;
+
+  // ヒビ（ボスの中心から外へ、ギザギザに伸びる）
+  const dims = exBossDims();
+  const R = Math.max(dims.w, dims.h) * 0.55;
+  exCracks = [];
+  for (let k = 0; k < 7; k++) {
+    const a0 = k / 7 * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    const pts = [[0, 0]];
+    for (let i = 1; i <= 5; i++) {
+      const a = a0 + (Math.random() - 0.5) * 0.7;
+      const r = R * i / 5;
+      pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    exCracks.push(pts);
+  }
+  shakeTime = 16;
+  playSound('bossDamage');
+  exSay('……ぐ、ぐおおおおお……！', true);
+}
+
+function exMakeShards() {
+  const b = activeBoss;
+  const dims = exBossDims();
+  const cols = 4, rows = 4;
+  const vx = [], vy = [];
+  for (let j = 0; j <= rows; j++) {
+    for (let i = 0; i <= cols; i++) {
+      const edge = i === 0 || j === 0 || i === cols || j === rows;
+      const jx = edge ? 0 : (Math.random() - 0.5) * dims.w / cols * 0.6;
+      const jy = edge ? 0 : (Math.random() - 0.5) * dims.h / rows * 0.6;
+      vx.push(-dims.w / 2 + i * dims.w / cols + jx);
+      vy.push(-dims.h / 2 + j * dims.h / rows + jy);
+    }
+  }
+  const at = (i, j) => [vx[j * (cols + 1) + i], vy[j * (cols + 1) + i]];
+  exShards = [];
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const p00 = at(i, j), p10 = at(i + 1, j), p01 = at(i, j + 1), p11 = at(i + 1, j + 1);
+      const tris = ((i + j) % 2 === 0) ? [[p00, p10, p11], [p00, p11, p01]] : [[p00, p10, p01], [p10, p11, p01]];
+      tris.forEach(pts => {
+        const cx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3;
+        const cy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
+        const d = Math.max(1, Math.hypot(cx, cy));
+        const sp = 2 + Math.random() * 4;
+        exShards.push({
+          pts: pts, cx: cx, cy: cy,
+          dx: 0, dy: 0, rot: 0,
+          vx: cx / d * sp + (Math.random() - 0.5) * 2,
+          vy: cy / d * sp - 2.5,
+          vr: (Math.random() - 0.5) * 0.3
+        });
+      });
+    }
+  }
+}
+
+function tickExBreak() {
+  const b = activeBoss;
+  exBreakT++;
+  b.hp = Math.max(b.hp, 1);
+  b._exHp = b.hp;
+  b.shootTimer = 99999;
+  b._pt = 99999;
+  const t = exBreakT;
+
+  if (t < EX_CR_END && t % 30 === 0) { shakeTime = 8 + t / 10; playSound('laserFire'); }
+
+  if (t === EX_CR_END) {
+    exMakeShards();
+    jfx.push({ type: 'flash', t: 0, total: 16, color: '255,255,255' });
+    jfx.push({ type: 'ring', x: b.x, y: b.y, t: 0, total: 28, color: '#FFFFFF' });
+    shakeTime = 26;
+    playSound('bossDamage');
+    spawnParticles(b.x, b.y, '#EA580C', 24, false);
+    spawnParticles(b.x, b.y, '#FFFFFF', 14, false);
+    exSay('……よくぞ、我が殻を砕いた。', true);
+  }
+  if (t > EX_CR_END && t <= EX_SH_END) {
+    exShards.forEach(s => {
+      s.dx += s.vx; s.dy += s.vy; s.vy += 0.3; s.rot += s.vr;
+    });
+  }
+  if (t === EX_SH_END) {
+    exSkin = 2;
+    bossGifName = '';   // 画像を第二形態に差し替える
+    exShards = [];
+    jfx.push({ type: 'flash', t: 0, total: 14, color: '255,200,150' });
+    jfx.push({ type: 'ring', x: b.x, y: b.y, t: 0, total: 30, color: '#EA580C' });
+    shakeTime = 20;
+    playSound('laserFire');
+    stageIntro = { t: 150, total: 150, boss: EXTRA_BOSS, title: '否愚魔', sub: '第二形態' };
+    exSay('来い……我が内に眠る、すべての魂よ！', true);
+  }
+  if (t > EX_SH_END && t < EX_AB_END) {
+    // 吸い込まれた瞬間の演出
+    const n = BOSS_ORDER.length - 1;
+    for (let i = 0; i < n; i++) {
+      if (t === EX_SH_END + i * 5 + 70) {
+        b._pulse = 8;
+        if (i % 3 === 0) { shakeTime = 5; playSound('deflect'); }
+        spawnParticles(b.x, b.y, '#FDE047', 5, false);
+      }
+    }
+  }
+  if (t >= EX_AB_END) {
+    exPhase = 2;
+    b.maxHp = b.hp = EX2_HP;
+    updateBossHpUi();
+    b._exHp = b.hp;
+    b.shootTimer = 70;
+    b._pt = 70;
+    b.vx *= 1.25;
+    Object.keys(EX_HP_LINES).forEach(k => delete EX_HP_LINES[k]);
+    Object.assign(EX_HP_LINES, EX_HP_LINES_P2);
+    jfx.push({ type: 'flash', t: 0, total: 16, color: '255,255,255' });
+    shakeTime = 24;
+    playSound('clear');
+    bossCallouts.push({ text: '第二形態', col: EX2_COL, t: 0, total: 90 });
+    exSay('我こそは山の主、否愚魔。ここからが、真の戦いだ。', true);
+  }
+}
+
+// ---------- 変身中の描画 ----------
+function drawExBreakBoss() {
+  const b = activeBoss;
+  const T = exBreakT;
+  const sx = b.x, sy = b.y - cameraY;
+  const dims = exBossDims();
+  if (T < EX_CR_END) {
+    const p = T / EX_CR_END;
+    if (!exBuf) { exBuf = document.createElement('canvas'); exBuf.width = 360; exBuf.height = 280; }
+    const c = exBuf.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, 360, 280);
+    c.save();
+    c.translate(180, 140);
+    drawExBossBody(c, dims, 1);
+    c.globalCompositeOperation = 'source-atop';
+    const gl = c.createRadialGradient(0, 0, 4, 0, 0, 90);
+    gl.addColorStop(0, 'rgba(255,180,80,' + (0.15 + 0.55 * p) + ')');
+    gl.addColorStop(1, 'rgba(255,90,30,' + (0.05 + 0.3 * p) + ')');
+    c.fillStyle = gl;
+    c.fillRect(-180, -140, 360, 280);
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    exCracks.forEach(pts => {
+      const L = pts.length - 1;
+      const reach = Math.min(L, p * L * 1.2);
+      c.beginPath();
+      c.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i <= L; i++) {
+        if (i <= reach) c.lineTo(pts[i][0], pts[i][1]);
+        else {
+          const f = reach - (i - 1);
+          if (f > 0) c.lineTo(pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f);
+          break;
+        }
+      }
+      c.strokeStyle = '#1E1E24'; c.lineWidth = 5; c.stroke();
+      c.strokeStyle = '#FFF3D6'; c.lineWidth = 2.2; c.stroke();
+    });
+    c.restore();
+    const jx = (Math.random() - 0.5) * (2 + p * 8);
+    const jy = (Math.random() - 0.5) * (2 + p * 8);
+    ctx.drawImage(exBuf, sx + jx - 180, sy + jy - 140);
+  } else {
+    const q = (T - EX_CR_END) / (EX_SH_END - EX_CR_END);
+    const alpha = Math.max(0, 1 - Math.pow(q, 1.5));
+    exShards.forEach(s => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(sx + s.cx + s.dx, sy + s.cy + s.dy);
+      ctx.rotate(s.rot);
+      ctx.translate(-s.cx, -s.cy);
+      ctx.beginPath();
+      ctx.moveTo(s.pts[0][0], s.pts[0][1]);
+      ctx.lineTo(s.pts[1][0], s.pts[1][1]);
+      ctx.lineTo(s.pts[2][0], s.pts[2][1]);
+      ctx.closePath();
+      ctx.clip();
+      drawExBossBody(ctx, dims, 1);
+      ctx.restore();
+    });
+  }
+}
+
+function drawExAbsorb() {
+  const b = activeBoss;
+  const t = exBreakT - EX_SH_END;
+  if (t < 0) return;
+  const sx = b.x, sy = b.y - cameraY;
+  const T = Date.now() * 0.002;
+  const arrived = Math.min(1, t / 175);
+  const pulse = (b._pulse > 0) ? b._pulse-- : 0;
+  ctx.save();
+  const g = ctx.createRadialGradient(sx, sy, 10, sx, sy, 70 + arrived * 70 + pulse * 3);
+  g.addColorStop(0, 'rgba(255,220,150,' + (0.35 + 0.4 * arrived) + ')');
+  g.addColorStop(1, 'rgba(255,120,40,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(sx, sy, 150, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  const souls = BOSS_ORDER.filter(n => n !== EXTRA_BOSS);
+  souls.forEach((n, i) => {
+    const p = (t - i * 5) / 70;
+    if (p <= 0 || p >= 1) return;
+    const e = p * p;
+    const ang = i / souls.length * Math.PI * 2 + p * 2.4;
+    const rad = 270 * (1 - e);
+    const x = sx + Math.cos(ang) * rad;
+    const y = sy + Math.sin(ang) * rad * 0.8;
+    drawSoul(n, x, y, 0.2 + 0.7 * (1 - e), 0.85 * (1 - e * 0.6), T + i);
+  });
+}
+
+// ---------- 壁の穴 ----------
+const HOLE_WARN = 70, HOLE_OPEN = 330, HOLE_CLOSE = 20;
+
+function exAddHole(side, y, h) {
+  exHoles.push({ side: side, y: y, h: h, t: 0, shot: 0 });
+}
+
+function tickExHoles(dt) {
+  const b = activeBoss;
+  for (let i = exHoles.length - 1; i >= 0; i--) {
+    const h = exHoles[i];
+    const prev = h.t;
+    h.t += dt;
+    if (prev < HOLE_WARN && h.t >= HOLE_WARN) {
+      shakeTime = 14;
+      playSound('laserFire');
+      spawnParticles(h.side === 'left' ? LEFT_WALL_X : RIGHT_WALL_X, h.y + h.h / 2, '#78716C', 14, false);
+    }
+    if (h.t >= HOLE_WARN && h.t < HOLE_WARN + HOLE_OPEN) {
+      // 穴に壁が無いので、壁に張りついたままだと落ちてしまう
+      const onSide = h.side === 'left' ? player.x <= LEFT_WALL_X + 4 : player.x + player.size >= RIGHT_WALL_X - 4;
+      if (onSide && player.y + player.size - 4 > h.y && player.y + 4 < h.y + h.h) {
+        enemyKillsPlayer('#78716C');
+        return;
+      }
+      // 穴から岩が飛び出してくる
+      h.shot += dt;
+      if (h.shot >= 55 && b && b.hp > 0) {
+        h.shot = 0;
+        const dir = h.side === 'left' ? 1 : -1;
+        const x0 = h.side === 'left' ? LEFT_WALL_X + 20 : RIGHT_WALL_X - 20;
+        v2Shot(b, { s: 'boulder', col: '#B45309' }, x0, h.y + h.h / 2 + (Math.random() - 0.5) * h.h * 0.6, dir * 3.0, 0, { sz: 14, life: 170 });
+      }
+    }
+    if (h.t >= HOLE_WARN + HOLE_OPEN + HOLE_CLOSE) exHoles.splice(i, 1);
+  }
+}
+
+function drawExHoles() {
+  const T = Date.now() * 0.01;
+  for (const h of exHoles) {
+    const sy = h.y - cameraY;
+    if (sy > canvas.height + 20 || sy + h.h < -20) continue;
+    const left = h.side === 'left';
+    const x0 = left ? 0 : RIGHT_WALL_X;
+    const inner = left ? LEFT_WALL_X : RIGHT_WALL_X;
+    const dir = left ? 1 : -1;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if (h.t < HOLE_WARN) {
+      const p = h.t / HOLE_WARN;
+      ctx.beginPath(); ctx.rect(x0, sy, WALL_WIDTH, h.h); ctx.clip();
+      ctx.fillStyle = 'rgba(255,59,107,' + (0.15 + 0.25 * Math.abs(Math.sin(T * 0.8))) + ')';
+      ctx.fillRect(x0, sy, WALL_WIDTH, h.h);
+      for (let k = 0; k < 4; k++) {
+        const yy = sy + (k + 0.5) / 4 * h.h;
+        ctx.beginPath();
+        ctx.moveTo(inner, yy);
+        for (let s = 1; s <= 4; s++) {
+          ctx.lineTo(inner - dir * s * 9 * p, yy + (s % 2 ? -1 : 1) * 7 * p);
+        }
+        ctx.strokeStyle = '#1E1E24'; ctx.lineWidth = 5; ctx.stroke();
+        ctx.strokeStyle = '#FFF3D6'; ctx.lineWidth = 2; ctx.stroke();
+      }
+      ctx.restore();
+      // 予告の矢印
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,59,107,' + (0.45 + 0.45 * Math.abs(Math.sin(T * 1.2))) + ')';
+      for (let k = 0; k < 2; k++) {
+        const ax = inner + dir * (16 + k * 14);
+        const ay = sy + h.h / 2;
+        ctx.beginPath(); ctx.moveTo(ax + dir * 8, ay); ctx.lineTo(ax - dir * 6, ay - 9); ctx.lineTo(ax - dir * 6, ay + 9); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      continue;
+    }
+    const closeT = h.t - HOLE_WARN - HOLE_OPEN;
+    const a = closeT > 0 ? Math.max(0, 1 - closeT / HOLE_CLOSE) : 1;
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.rect(x0, sy, WALL_WIDTH, h.h); ctx.clip();
+    const g = ctx.createLinearGradient(left ? 0 : RIGHT_WALL_X + WALL_WIDTH, 0, inner, 0);
+    g.addColorStop(0, '#000000');
+    g.addColorStop(1, '#1B0B2E');
+    ctx.fillStyle = g;
+    ctx.fillRect(x0, sy, WALL_WIDTH, h.h);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    for (let k = 0; k < 6; k++) {
+      ctx.fillRect(x0 + 6 + (k * 11) % 26, sy + 10 + (k * 23) % (h.h - 14), 2, 2);
+    }
+    ctx.restore();
+    // ギザギザの縁
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(inner, sy);
+    const n = 8;
+    for (let k = 1; k <= n; k++) {
+      ctx.lineTo(inner + dir * (k % 2 ? 7 : 0), sy + k / n * h.h);
+    }
+    ctx.strokeStyle = '#1E1E24'; ctx.lineWidth = 6; ctx.stroke();
+    ctx.strokeStyle = EX2_COL; ctx.lineWidth = 3; ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ---------- 天地裂き（横一直線のビーム）----------
+function exAddBeam(y, delay) {
+  exBeams.push({ y: y, t: -delay, warn: 70, fire: 16 });
+}
+
+function tickExBeams(dt) {
+  for (let i = exBeams.length - 1; i >= 0; i--) {
+    const m = exBeams[i];
+    const prev = m.t;
+    m.t += dt;
+    if (prev < m.warn && m.t >= m.warn) { shakeTime = 10; playSound('laserFire'); }
+    if (m.t >= m.warn && m.t < m.warn + m.fire) {
+      if (player.y + 5 < m.y + 16 && player.y + player.size - 5 > m.y - 16) {
+        enemyKillsPlayer('#EA580C');
+        return;
+      }
+    }
+    if (m.t >= m.warn + m.fire) exBeams.splice(i, 1);
+  }
+}
+
+function drawExBeams() {
+  const T = Date.now() * 0.01;
+  const W = canvas.width;
+  for (const m of exBeams) {
+    if (m.t < 0) continue;
+    const sy = m.y - cameraY;
+    if (sy < -40 || sy > canvas.height + 40) continue;
+    ctx.save();
+    if (m.t < m.warn) {
+      const p = m.t / m.warn;
+      const pulse = 0.5 + 0.5 * Math.abs(Math.sin(T * 1.2 + p * 8));
+      ctx.strokeStyle = 'rgba(255,59,107,' + (0.35 + 0.5 * pulse) + ')';
+      ctx.lineWidth = 2 + p * 4;
+      ctx.setLineDash([14, 10]);
+      ctx.lineDashOffset = -T * 4;
+      ctx.beginPath(); ctx.moveTo(LEFT_WALL_X, sy); ctx.lineTo(RIGHT_WALL_X, sy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,59,107,' + (0.5 + 0.4 * pulse) + ')';
+      [[LEFT_WALL_X + 8, 1], [RIGHT_WALL_X - 8, -1]].forEach(a => {
+        ctx.beginPath(); ctx.moveTo(a[0] + a[1] * 10, sy); ctx.lineTo(a[0], sy - 9); ctx.lineTo(a[0], sy + 9); ctx.closePath(); ctx.fill();
+      });
+    } else {
+      const q = (m.t - m.warn) / m.fire;
+      const th = 30 * (1 - q * 0.4);
+      ctx.fillStyle = 'rgba(234,88,12,0.45)';
+      ctx.fillRect(0, sy - th, W, th * 2);
+      ctx.fillStyle = '#FDBA74';
+      ctx.fillRect(0, sy - th * 0.55, W, th * 1.1);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, sy - th * 0.2, W, th * 0.4);
+    }
+    ctx.restore();
+  }
+}
+
+// ---------- 第二形態の攻撃 ----------
+function exMoveHoles(b, r, px, py) {
+  const sides = Math.random() < 0.5 ? ['left', 'right'] : ['right', 'left'];
+  const clampY = (y) => Math.max(cameraY + 90, Math.min(cameraY + canvas.height - 220, y));
+  const ys = [clampY(py - 70 + (Math.random() - 0.5) * 80), clampY(py - 230 + (Math.random() - 0.5) * 80)];
+  sides.forEach((s, i) => {
+    sigQueue(b, 24 + i * 50, () => exAddHole(s, ys[i], 120), null);
+  });
+  playSound('laserWarn');
+  return 260;
+}
+
+function exMoveBeams(b, r, px, py) {
+  const clampY = (y) => Math.max(cameraY + 110, Math.min(cameraY + canvas.height - 100, y));
+  for (let i = 0; i < 3; i++) {
+    const y = clampY(py + (i - 1) * 150 + (Math.random() - 0.5) * 80);
+    exAddBeam(y, i * 22);
+  }
+  playSound('laserWarn');
+  return 70 + 3 * 22 + 70;
+}
+
+function exMoveClaw(b, r, px, py) {
+  const cfg = { s: 'slash', col: EX2_COL };
+  const d1 = MOVES.crossSlash(b, cfg, r + 4, px, py);
+  sigQueue(b, 90, () => {
+    const pc = playerCenter();
+    MOVES.crossSlash(b, cfg, r + 4, pc.x, pc.y);
+  }, null);
+  return 90 + d1;
+}
+
+function exMoveQuake(b, r, px, py) {
+  const cfg = { s: 'boulder', col: '#A8A29E' };
+  shakeTime = 20;
+  const d1 = MOVES.rainVolley(b, cfg, r + 6, px, py);
+  sigQueue(b, 60, () => { MOVES.rainVolley(b, cfg, r + 6, px, py); shakeTime = 14; }, null);
+  return 60 + d1;
+}
+
+function exMoveSoul(b, r, px, py) {
+  const names = BOSS_ORDER.filter(n => n !== EXTRA_BOSS && BOSS_MOVES[n]);
+  const n1 = names[Math.floor(Math.random() * names.length)];
+  let n2;
+  do { n2 = names[Math.floor(Math.random() * names.length)]; } while (n2 === n1 && names.length > 1);
+  const pick = (n) => {
+    const list = BOSS_MOVES[n];
+    const m = list[Math.floor(Math.random() * list.length)];
+    return { m: m, cfg: { s: m.s, n: m.n, col: (BOSS_THEMES[n] || DEFAULT_THEME).orb } };
+  };
+  const a = pick(n1), c = pick(n2);
+  const d1 = MOVES[a.m.m](b, a.cfg, r, px, py) || 150;
+  bossCallouts.push({ text: '魂解放・' + a.m.n, col: a.cfg.col, t: 0, total: 80 });
+  sigQueue(b, 100, () => {
+    const pc = playerCenter();
+    MOVES[c.m.m](b, c.cfg, r, pc.x, pc.y);
+    bossCallouts.push({ text: c.m.n, col: c.cfg.col, t: 0, total: 80 });
+  }, null);
+  b._souls = [n1, n2];
+  b._soulT = b._soulTotal = 130;
+  return Math.max(d1, 100 + 150);
+}
+
+const EX2_MOVES = [
+  { f: exMoveHoles, n: '壁穿ち' },
+  { f: exMoveHoles, n: '壁穿ち' },
+  { f: exMoveBeams, n: '天地裂き' },
+  { f: exMoveBeams, n: '天地裂き' },
+  { f: exMoveClaw, n: '熊爪連撃' },
+  { f: exMoveQuake, n: '山崩しの咆哮' },
+  { f: exMoveSoul, n: null },
+  { f: exMoveSoul, n: null }
+];
+
+function exPhase2Attack(b, px, py) {
+  let i;
+  do { i = Math.floor(Math.random() * EX2_MOVES.length); } while (EX2_MOVES[i].f === b._lastEx2 && EX2_MOVES.length > 1);
+  const m = EX2_MOVES[i];
+  b._lastEx2 = m.f;
+  const r = Math.min(bossRank(b), 16);
+  const dur = m.f(b, r, px, py) || 160;
+  b.shootTimer = Math.max(110, Math.round(dur * 0.8));
+  b._charge = 32;
+  b._chargeCol = EX2_COL;
+  if (m.n) bossCallouts.push({ text: m.n, col: EX2_COL, t: 0, total: 80 });
+  b._atkN2 = (b._atkN2 || 0) + 1;
+  if (b._atkN2 % 2 === 0) {
+    let k;
+    do { k = Math.floor(Math.random() * EX2_TAUNTS.length); } while (k === b._lastTaunt2 && EX2_TAUNTS.length > 1);
+    b._lastTaunt2 = k;
+    exSay(EX2_TAUNTS[k]);
+  }
+}
+
+const baseBossAttackV2c = bossAttackV2;
+bossAttackV2 = function (b, px, py) {
+  if (b.name === EXTRA_BOSS && exPhase === 2) { exPhase2Attack(b, px, py); return; }
+  baseBossAttackV2c(b, px, py);
+};
+
+// ---------- 開始時の初期化 ----------
+const baseStartGame6 = startGame;
+startGame = function (...args) {
+  exPhase = 1;
+  exSkin = 1;
+  exBreakT = 0;
+  exShards = [];
+  exCracks = [];
+  exHoles = [];
+  exBeams = [];
+  bossGifName = '';
+  Object.keys(EX_HP_LINES).forEach(k => delete EX_HP_LINES[k]);
+  Object.assign(EX_HP_LINES, EX_HP_LINES_P1);
+  baseStartGame6(...args);
+};
+
+// ---------- 毎フレーム ----------
+const baseUpdateFn7 = update;
+update = function () {
+  baseUpdateFn7();
+  if (paused || gameState !== 'playing' || !isExtraStage() || !activeBoss ||
+      activeBoss.name !== EXTRA_BOSS || !activeBoss.active) return;
+  if (exPhase === 'break') tickExBreak();
+  const dt = Math.max(0, timeScale());
+  if (gameState === 'playing') tickExHoles(dt);
+  if (gameState === 'playing') tickExBeams(dt);
+  if (gameState === 'playing' && exPhase === 2 && activeBoss.hp > 0) {
+    goalY -= 0.15 * dt;                   // 第二形態は、登る速さが少し上がる
+    activeBoss.y = goalY + 110;
+  }
+};
+
+function drawExPhaseFx() {
+  const b = activeBoss;
+  if (exPhase === 'break') {
+    if (exBreakT < EX_SH_END) drawExBreakBoss();
+    else drawExAbsorb();
+  } else if (exPhase === 2 && b.hp > 0) {
+    const sx = b.x, sy = b.y - cameraY;
+    const g = ctx.createRadialGradient(sx, sy, 20, sx, sy, 110);
+    g.addColorStop(0, 'rgba(220,38,38,' + (0.22 + 0.08 * Math.sin(Date.now() * 0.006)) + ')');
+    g.addColorStop(1, 'rgba(220,38,38,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(sx, sy, 110, 0, Math.PI * 2); ctx.fill();
+  }
+  drawExHoles();
+  drawExBeams();
+}
+
+const baseDrawFn12 = draw;
+draw = function () {
+  if (paused) return;
+  const live = gameState === 'playing' && isExtraStage() && !!activeBoss && activeBoss.name === EXTRA_BOSS;
+  // 変身中の前半は、元のボスを描かず、ヒビ割れ・破片を自前で描く
+  const hide = live && exPhase === 'break' && exBreakT < EX_SH_END;
+  let saved = 0;
+  if (hide) { saved = activeBoss.hp; activeBoss.hp = 0; }
+  baseDrawFn12();
+  if (hide) activeBoss.hp = saved;
+  if (live) {
+    drawExPhaseFx();
+    // 第二形態の画像が無いときは、第一形態の画像の色を変えて代用する
+    if (bossGifEl) {
+      bossGifEl.style.filter = (exSkin === 2 && !baseGetBossGif(EX_P2_NAME))
+        ? 'hue-rotate(250deg) saturate(1.5) contrast(1.15)' : '';
+    }
+  }
+};
+
+// 戦闘中でないときは、セリフを消す
+setInterval(() => {
+  if (!exFight()) exDlgEl.style.opacity = '0';
+}, 100);
+
+
+/* SPLIT6 */
+// ==========================================
+// 否愚魔の最期（巨大な手）と、ENDLESS STORY THE FANTASY の解禁
+// ==========================================
+const FANTASY_KEY = 'wallKickFantasy';
+let exFinT = 0;
+let exBlood = [];
+let exBloodBurst = false;
+let fantasyUnlocked = false;
+try { fantasyUnlocked = localStorage.getItem(FANTASY_KEY) === '1'; } catch (e) {}
+
+STORY_DATA.extra[0].trivia = 'ヒグマは、日本では北海道だけに生息する最大の陸上動物。否愚魔を倒した君の前に、新しい冒険「ENDLESS STORY THE FANTASY」が解禁された！';
+
+// ---------- 握りつぶす効果音 ----------
+function exCrushSound() {
+  try {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    // きしみながら低くなる音
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    const f = audioCtx.createBiquadFilter();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(140, now);
+    o.frequency.exponentialRampToValueAtTime(38, now + 0.9);
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(900, now);
+    f.frequency.exponentialRampToValueAtTime(120, now + 0.9);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.28, now + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+    o.connect(f); f.connect(g); g.connect(audioCtx.destination);
+    o.start(now); o.stop(now + 1.0);
+    // 骨がきしむようなパチパチ音
+    const len = Math.floor(audioCtx.sampleRate * 0.9);
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      const tt = i / len;
+      d[i] = (Math.random() * 2 - 1) * (Math.random() < 0.08 ? 1 : 0.15) * (1 - tt);
+    }
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 600;
+    const ng = audioCtx.createGain();
+    ng.gain.value = 0.35;
+    src.connect(hp); hp.connect(ng); ng.connect(audioCtx.destination);
+    src.start(now + 0.05);
+    // 最後の「ぐしゃっ」
+    const p = audioCtx.createOscillator();
+    const pg = audioCtx.createGain();
+    p.type = 'square';
+    p.frequency.setValueAtTime(220, now + 0.85);
+    p.frequency.exponentialRampToValueAtTime(40, now + 1.1);
+    pg.gain.setValueAtTime(0.0001, now + 0.84);
+    pg.gain.exponentialRampToValueAtTime(0.3, now + 0.86);
+    pg.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
+    p.connect(pg); pg.connect(audioCtx.destination);
+    p.start(now + 0.84); p.stop(now + 1.2);
+  } catch (e) {}
+}
+
+// ---------- 巨大な手 ----------
+function exCapsule(c, x0, y0, x1, y1, w) {
+  const dx = x1 - x0, dy = y1 - y0;
+  const d = Math.max(1, Math.hypot(dx, dy));
+  const nx = -dy / d, ny = dx / d;
+  const o = w * 0.24;
+  const line = (ox, oy, lw, col) => {
+    c.strokeStyle = col;
+    c.lineWidth = lw;
+    c.beginPath(); c.moveTo(x0 + ox, y0 + oy); c.lineTo(x1 + ox, y1 + oy); c.stroke();
+  };
+  c.lineCap = 'round';
+  line(0, 0, w + 5, INK3);
+  line(0, 0, w, '#F6C9A1');
+  line(-nx * o, -ny * o, w * 0.32, '#DBA074');
+  line(nx * o, ny * o, w * 0.3, '#FFE6CC');
+}
+
+function drawGiantHandBack(c, x, y, s, curl) {
+  c.save();
+  c.translate(x, y);
+  c.scale(s, s);
+  c.lineJoin = 'round';
+  c.lineCap = 'round';
+
+  // 後光
+  const aura = c.createRadialGradient(0, 40, 10, 0, 40, 240);
+  aura.addColorStop(0, 'rgba(255,230,150,0.5)');
+  aura.addColorStop(1, 'rgba(255,230,150,0)');
+  c.fillStyle = aura;
+  c.beginPath(); c.arc(0, 40, 240, 0, Math.PI * 2); c.fill();
+
+  // 袖（画面の上まで続く）
+  const sl = c.createLinearGradient(-90, 0, 90, 0);
+  sl.addColorStop(0, '#CBD5E1'); sl.addColorStop(0.5, '#FFFFFF'); sl.addColorStop(1, '#B6C2D2');
+  c.fillStyle = sl; c.strokeStyle = INK3; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(-60, -112); c.lineTo(-92, -1000); c.lineTo(92, -1000); c.lineTo(60, -112); c.closePath();
+  c.fill(); c.stroke();
+  c.strokeStyle = 'rgba(100,116,139,0.45)'; c.lineWidth = 3;
+  for (let k = 0; k < 5; k++) {
+    c.beginPath(); c.moveTo(-40 + k * 20, -135); c.quadraticCurveTo(-46 + k * 23, -300, -52 + k * 26, -700); c.stroke();
+  }
+
+  // 腕
+  const arm = c.createLinearGradient(-40, 0, 40, 0);
+  arm.addColorStop(0, '#DBA074'); arm.addColorStop(0.4, '#F6C9A1'); arm.addColorStop(1, '#E3AD83');
+  c.fillStyle = arm; c.strokeStyle = INK3; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(-36, -112); c.lineTo(-40, -52); c.lineTo(40, -52); c.lineTo(36, -112); c.closePath(); c.fill(); c.stroke();
+
+  // 金の袖口
+  const gold = c.createLinearGradient(0, -134, 0, -100);
+  gold.addColorStop(0, '#FEF08A'); gold.addColorStop(0.5, '#FACC15'); gold.addColorStop(1, '#B45309');
+  c.fillStyle = gold; c.strokeStyle = INK3; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(-66, -134); c.lineTo(66, -134); c.lineTo(62, -104); c.lineTo(-62, -104); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#38BDF8';
+  [-36, 0, 36].forEach(gx => { c.beginPath(); c.arc(gx, -119, 6, 0, Math.PI * 2); c.fill(); c.stroke(); });
+
+  // 手のひら
+  const palm = c.createLinearGradient(0, -58, 0, 60);
+  palm.addColorStop(0, '#F6C9A1'); palm.addColorStop(1, '#E8B58A');
+  c.fillStyle = palm; c.strokeStyle = INK3; c.lineWidth = 4;
+  c.beginPath();
+  c.moveTo(-38, -58);
+  c.quadraticCurveTo(-64, -20, -60, 30);
+  c.quadraticCurveTo(-58, 58, -30, 60);
+  c.lineTo(30, 60);
+  c.quadraticCurveTo(58, 58, 60, 30);
+  c.quadraticCurveTo(64, -20, 38, -58);
+  c.closePath();
+  c.fill(); c.stroke();
+  c.fillStyle = 'rgba(180,110,70,0.22)';
+  c.beginPath(); c.ellipse(26, 26, 30, 26, 0.3, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(255,240,225,0.35)';
+  c.beginPath(); c.ellipse(-24, -14, 20, 30, 0.2, 0, Math.PI * 2); c.fill();
+  if (curl < 0.65) {
+    c.strokeStyle = 'rgba(150,85,50,' + (0.6 * (1 - curl / 0.65)) + ')';
+    c.lineWidth = 2.4;
+    c.beginPath(); c.moveTo(-46, 4); c.quadraticCurveTo(-10, 18, 40, 0); c.stroke();
+    c.beginPath(); c.moveTo(-40, -20); c.quadraticCurveTo(-5, -4, 30, -22); c.stroke();
+    c.beginPath(); c.moveTo(-30, 30); c.quadraticCurveTo(-26, 0, -34, -24); c.stroke();
+  }
+
+  c.restore();
+}
+
+// 指と親指（否愚魔の手前に描く）
+function drawGiantHandFront(c, x, y, s, curl) {
+  c.save();
+  c.translate(x, y);
+  c.scale(s, s);
+  c.lineJoin = 'round';
+  c.lineCap = 'round';
+
+  // 指（人差し指〜小指）
+  const FING = [
+    { bx: -42, L: 66, sp: -0.2 },
+    { bx: -14, L: 80, sp: -0.06 },
+    { bx: 14, L: 74, sp: 0.06 },
+    { bx: 42, L: 58, sp: 0.2 }
+  ];
+  const fr = [0.42, 0.30, 0.28];
+  const bend = [0.4, 0.5, 0.4];
+  FING.forEach(f => {
+    let px = f.bx * (1 - 0.5 * curl), py = 52;
+    const ang = f.sp * (1 - curl) + (f.bx < 0 ? 1 : -1) * 0.3 * curl;
+    let cum = 0;
+    for (let k = 0; k < 3; k++) {
+      const len = f.L * fr[k];
+      cum += curl * bend[k];
+      const vis = Math.max(0.12, Math.cos(Math.min(cum, 1.45)));
+      const x1 = px + Math.sin(ang) * len * vis;
+      const y1 = py + Math.cos(ang) * len * vis;
+      const w = (26 - k * 2) * (1 + 0.28 * Math.sin(Math.min(cum, 1.5)));
+      exCapsule(c, px, py, x1, y1, w);
+      if (k > 0 && curl < 0.8) {
+        c.strokeStyle = 'rgba(150,85,50,0.6)';
+        c.lineWidth = 2;
+        c.beginPath(); c.moveTo(px - w * 0.32, py); c.lineTo(px + w * 0.32, py); c.stroke();
+      }
+      px = x1; py = y1;
+    }
+  });
+
+  // 親指
+  let a1 = 1.0 + (-0.7 - 1.0) * curl;
+  let tx = -50, ty = 16;
+  for (let k = 0; k < 2; k++) {
+    const len = k === 0 ? 42 : 34;
+    const a = a1 + k * 0.25 * curl;
+    const x1 = tx - Math.sin(a) * len;
+    const y1 = ty + Math.cos(a) * len;
+    exCapsule(c, tx, ty, x1, y1, 29 - k * 3);
+    tx = x1; ty = y1;
+  }
+  c.restore();
+}
+
+// ---------- 最期の演出 ----------
+function exBeginFinale() {
+  const b = activeBoss;
+  exPhase = 'finale';
+  exFinT = 0;
+  exBlood = [];
+  exBloodBurst = false;
+  b.hp = 1;
+  b._exHp = 1;
+  projectiles = [];
+  bossLasers = [];
+  bossQueue.length = 0;
+  bossBombs.length = 0;
+  exHoles = [];
+  exBeams = [];
+  b.shootTimer = 99999;
+  b._pt = 99999;
+  b._charge = 0;
+  shakeTime = 16;
+  playSound('bossDamage');
+}
+
+function tickExFinale() {
+  const b = activeBoss;
+  exFinT++;
+  const t = exFinT;
+  b.hp = Math.max(b.hp, 1);
+  b._exHp = b.hp;
+  b.shootTimer = 99999;
+  b._pt = 99999;
+  projectiles = [];
+  bossLasers = [];
+  bossQueue.length = 0;
+  bossBombs.length = 0;
+  jstate.postInv = Math.max(jstate.postInv, 10);   // 演出中は、プレイヤーはやられない
+
+  if (t === 24) exSay('お役目ご苦労さん。', true);
+  if (t === 40) playSound('laserWarn');
+  if (t === 170) exCrushSound();
+  if (t > 170 && t < 222 && t % 4 === 0) {
+    shakeTime = 6;
+    spawnParticles(b.x + (Math.random() - 0.5) * 50, b.y + (Math.random() - 0.5) * 40, '#B91C1C', 3, false);
+  }
+  if (t === 222) {
+    jfx.push({ type: 'flash', t: 0, total: 14, color: '255,255,255' });
+    jfx.push({ type: 'ring', x: b.x, y: b.y, t: 0, total: 26, color: '#FFFFFF' });
+    shakeTime = 26;
+    spawnParticles(b.x, b.y, '#7F1D1D', 24, false);
+    spawnParticles(b.x, b.y, '#FDE047', 12, false);
+  }
+  if (t === 232) exSay('……さあ、帰ろうか。', true);
+  if (t === 310) {
+    fantasyUnlocked = true;
+    try { localStorage.setItem(FANTASY_KEY, '1'); } catch (e) {}
+    exFantasyRefresh();
+    playSound('clear');
+  }
+  if (t >= 390) {
+    exPhase = 'done';
+    maxAltitude = STAGES[currentDifficulty].goalMeters;
+    showResult(true);
+  }
+}
+
+function exBloodSpray(x, y, n, sp, up) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const v = sp * (0.4 + Math.random() * 0.6);
+    exBlood.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (up || 0), r: 1.5 + Math.random() * 3, life: 40 + Math.random() * 30 });
+  }
+}
+
+function drawExBlood() {
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let i = exBlood.length - 1; i >= 0; i--) {
+    const d = exBlood[i];
+    d.x += d.vx; d.y += d.vy; d.vy += 0.3; d.life--;
+    if (d.life <= 0 || d.y > canvas.height + 20) { exBlood.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.min(1, d.life / 20);
+    ctx.strokeStyle = '#7F1D1D';
+    ctx.lineWidth = d.r * 2 + 2;
+    ctx.beginPath(); ctx.moveTo(d.x - d.vx * 1.6, d.y - d.vy * 1.6); ctx.lineTo(d.x, d.y); ctx.stroke();
+    ctx.strokeStyle = '#DC2626';
+    ctx.lineWidth = d.r * 2;
+    ctx.beginPath(); ctx.moveTo(d.x - d.vx * 1.6, d.y - d.vy * 1.6); ctx.lineTo(d.x, d.y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBossPose(p) {
+  if (!p) return;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(p.sx, p.sy);
+  drawExBossBody(ctx, exBossDims(), 2);
+  ctx.restore();
+}
+
+function drawExFinale() {
+  const b = activeBoss;
+  const t = exFinT;
+  const W = canvas.width;
+  const bx = b.x, by = b.y - cameraY;
+  const ease = v => (v < 0 ? 0 : v > 1 ? 1 : v * v * (3 - 2 * v));
+
+  // 上から闇が落ちてくる
+  let dark = 0;
+  if (t < 40) dark = t / 40 * 0.5;
+  else if (t < 222) dark = 0.5;
+  else dark = 0.5 * (1 - ease((t - 222) / 88));
+  if (dark > 0) {
+    const g = ctx.createLinearGradient(0, 0, 0, by + 160);
+    g.addColorStop(0, 'rgba(0,0,12,' + dark + ')');
+    g.addColorStop(1, 'rgba(0,0,12,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, by + 160);
+  }
+
+  // 否愚魔（握られる前）。手のひらの手前・指の奥に描くので、ここでは位置だけ決める
+  let bossPose = null;
+  if (t < 222) {
+    const sp = ease((t - 40) / 80);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,' + (0.35 * sp) + ')';
+    ctx.beginPath(); ctx.ellipse(bx, by + 60, 70 + sp * 30, 16 + sp * 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    const q = t < 170 ? 0 : Math.min(1, (t - 170) / 52);
+    const sh = t < 20 ? 0 : (Math.random() - 0.5) * (t < 140 ? 3 : 3 + q * 8);
+    bossPose = { x: bx + sh, y: by + 56 * q * 0.6, sx: 1 + 0.15 * q, sy: 1 - 0.6 * q };
+  }
+
+  // 手
+  if (t >= 40) {
+    const hover = by - 225, dive = by - 54, top = -520;
+    let hx = bx, hy, curl;
+    if (t < 120) {
+      hy = top + (hover - top) * ease((t - 40) / 80);
+      curl = 0;
+      hx += Math.sin(t * 0.08) * 6;
+    } else if (t < 140) {
+      hy = hover + Math.sin((t - 120) * 0.4) * 3;
+      curl = 0;
+    } else if (t < 170) {
+      const p = ease((t - 140) / 30);
+      hy = hover + (dive - hover) * p;
+      curl = 0.7 * p;
+    } else if (t < 222) {
+      const p = (t - 170) / 52;
+      hy = dive + (Math.random() - 0.5) * (2 + p * 6);
+      hx += (Math.random() - 0.5) * (2 + p * 8);
+      curl = 0.7 + 0.3 * p;
+    } else {
+      const p = ease((t - 222) / 88);
+      hy = dive + (top - dive) * p * p;
+      curl = 1;
+    }
+    // 手のひら（奥）→ 否愚魔 → 指（手前）の順に描く
+    drawGiantHandBack(ctx, hx, hy, 1.35, curl);
+    drawBossPose(bossPose);
+    drawGiantHandFront(ctx, hx, hy, 1.35, curl);
+
+    // 指に付く血
+    if (t >= 190) {
+      const stain = Math.min(1, (t - 190) / 40);
+      ctx.fillStyle = 'rgba(185,28,28,' + (0.7 * stain) + ')';
+      for (let k = 0; k < 7; k++) {
+        ctx.beginPath();
+        ctx.ellipse(hx + (k - 3) * 20, hy + 85 + (k % 2) * 16, 9, 5, 0.3 * (k - 3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // 握る指の間から、赤いものが飛び散る
+    if (t >= 170 && t < 222) exBloodSpray(bx + (Math.random() - 0.5) * 70, by + 20 + Math.random() * 50, 2, 5, 1.5);
+    if (t >= 222 && !exBloodBurst) { exBloodBurst = true; exBloodSpray(bx, by + 20, 45, 9, 2); }
+    if (t >= 226 && t < 310 && t % 6 === 0) {
+      exBlood.push({ x: hx + (Math.random() - 0.5) * 40, y: hy + 120, vx: 0, vy: 0.5, r: 2.5, life: 60 });
+    }
+    drawExBlood();
+
+    if (t >= 222) {
+      // 握りこぶしの隙間からもれる、暗い光
+      const gg = ctx.createRadialGradient(hx, hy + 20, 5, hx, hy + 20, 70);
+      gg.addColorStop(0, 'rgba(160,20,60,0.5)');
+      gg.addColorStop(1, 'rgba(160,20,60,0)');
+      ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.arc(hx, hy + 20, 70, 0, Math.PI * 2); ctx.fill();
+    }
+  } else {
+    drawBossPose(bossPose);
+  }
+
+  // 解禁のお知らせ
+  if (t >= 310) {
+    const a = Math.min(1, (t - 310) / 12, (392 - t) / 12);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, a);
+    ctx.fillStyle = 'rgba(10,10,20,0.82)';
+    ctx.fillRect(0, 262, W, 118);
+    ctx.strokeStyle = '#FACC15';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, 262); ctx.lineTo(W, 262); ctx.moveTo(0, 380); ctx.lineTo(W, 380); ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.lineJoin = 'round';
+    ctx.font = '900 30px "M PLUS Rounded 1c", sans-serif';
+    ctx.strokeStyle = INK3; ctx.lineWidth = 6;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.strokeText('Endless Story', W / 2, 304);
+    ctx.fillText('Endless Story', W / 2, 304);
+    ctx.fillStyle = '#FDE047';
+    ctx.strokeText('The Fantasy', W / 2, 340);
+    ctx.fillText('The Fantasy', W / 2, 340);
+    ctx.font = '900 16px "M PLUS Rounded 1c", sans-serif';
+    ctx.fillStyle = '#F9A8D4';
+    ctx.fillText('解禁！', W / 2, 368);
+    ctx.restore();
+  }
+}
+
+// 演出中も「戦闘中」として扱う
+exFight = function () {
+  return isExtraStage() && gameState === 'playing' && !!activeBoss &&
+    activeBoss.name === EXTRA_BOSS && activeBoss.active &&
+    (activeBoss.hp > 0 || exPhase === 'break' || exPhase === 'finale');
+};
+
+// 演出中はダメージを受けない
+const baseBossTakeDamage3 = bossTakeDamage;
+bossTakeDamage = function (n) {
+  if (exPhase === 'finale') return;
+  baseBossTakeDamage3(n);
+};
+
+// 第二形態を倒したら、クリアの代わりに最期の演出へ
+const baseShowResult5 = showResult;
+showResult = function (isClear) {
+  if (isClear && gameState === 'playing' && isExtraStage() && activeBoss && activeBoss.name === EXTRA_BOSS) {
+    if (exPhase === 2) { exBeginFinale(); return; }
+    if (exPhase === 'finale') return;
+  }
+  baseShowResult5(isClear);
+};
+
+// ==========================================
+// ENDLESS STORY THE FANTASY
+//   終わりのない登り。100mごとにエリア（景色）が変わる
+// ==========================================
+const FANTASY_AREA_M = 100;
+const FANTASY_AREAS = [
+  { name: '風そよぐ草原', bgTop: '#DCFCE7', bgBottom: '#FEFCE8', wallColor: '#16A34A', wallLight: '#4ADE80', wallDark: '#166534' },
+  { name: '雪降る霊峰', bgTop: '#E0F2FE', bgBottom: '#F8FAFC', wallColor: '#0284C7', wallLight: '#38BDF8', wallDark: '#0369A1' },
+  { name: '黄金の砂漠', bgTop: '#FEF3C7', bgBottom: '#FFEDD5', wallColor: '#D97706', wallLight: '#FBBF24', wallDark: '#92400E' },
+  { name: '深緑の神樹', bgTop: '#D1FAE5', bgBottom: '#ECFCCB', wallColor: '#0D9488', wallLight: '#2DD4BF', wallDark: '#115E59' },
+  { name: '雲上の天空城', bgTop: '#E0E7FF', bgBottom: '#FAF5FF', wallColor: '#6366F1', wallLight: '#A5B4FC', wallDark: '#3730A3' },
+  { name: '夕焼けの海原', bgTop: '#FFE4E6', bgBottom: '#FFEDD5', wallColor: '#E11D48', wallLight: '#FB7185', wallDark: '#9F1239' },
+  { name: '月夜の庭園', bgTop: '#312E81', bgBottom: '#4C1D95', wallColor: '#7C3AED', wallLight: '#A78BFA', wallDark: '#5B21B6' },
+  { name: '星海の回廊', bgTop: '#1E1B4B', bgBottom: '#312E81', wallColor: '#4F46E5', wallLight: '#818CF8', wallDark: '#312E81' },
+  { name: '創世の間', bgTop: '#FDF4FF', bgBottom: '#FEF9C3', wallColor: '#C026D3', wallLight: '#E879F9', wallDark: '#86198F' }
+];
+STAGES.fantasy = Object.assign({}, STAGES.record, { name: 'FANTASY' });
+
+let fantasyArea = 0;
+let fantasyBest = 0;
+try { fantasyBest = parseInt(localStorage.getItem('wallKickFantasyBest') || '0', 10) || 0; } catch (e) {}
+
+function exFantasyApply(idx) {
+  Object.assign(STAGES.fantasy, FANTASY_AREAS[idx % FANTASY_AREAS.length]);
+}
+
+// タイトル画面のボタン（解禁後に表示）
+const fantasyBtn = document.createElement('button');
+fantasyBtn.id = 'fantasy-btn';
+fantasyBtn.className = 'btn';
+fantasyBtn.innerHTML = '<span>ENDLESS STORY</span><span class="stage-tag">THE FANTASY</span>';
+fantasyBtn.addEventListener('click', () => startGame('fantasy'));
+screenTitle.querySelector('.btn-record').after(fantasyBtn);
+
+function exFantasyRefresh() {
+  document.body.classList.toggle('fantasy-on', fantasyUnlocked);
+}
+exFantasyRefresh();
+
+// 最高記録は、RECORDとは別に記録する
+const baseShowResult6 = showResult;
+showResult = function (isClear) {
+  if (currentDifficulty === 'fantasy' && gameState === 'playing') {
+    const real = bestRecord;
+    bestRecord = fantasyBest;
+    baseShowResult6(isClear);
+    fantasyBest = bestRecord;
+    try {
+      localStorage.setItem('wallKickFantasyBest', String(fantasyBest));
+      localStorage.setItem('wallKickBestRecord', String(real));
+    } catch (e) {}
+    bestRecord = real;
+    return;
+  }
+  baseShowResult6(isClear);
+};
+
+// ---------- 開始時 ----------
+const baseStartGame7 = startGame;
+startGame = function (...args) {
+  exFinT = 0;
+  const isFantasy = args[0] === 'fantasy';
+  if (isFantasy) { fantasyArea = 0; exFantasyApply(0); }
+  baseStartGame7(...args);
+  if (isFantasy) {
+    lastSelectScreen = 'title';
+    hudStage.textContent = 'FANTASY';
+    stageIntro = { t: 110, total: 110, boss: null, title: FANTASY_AREAS[0].name, sub: 'AREA 1' };
+  }
+};
+
+// ---------- 毎フレーム ----------
+const baseUpdateFn8 = update;
+update = function () {
+  const g0 = goalY;
+  baseUpdateFn8();
+  if (paused || gameState !== 'playing') return;
+  if (exPhase === 'finale' && isExtraStage() && activeBoss) {
+    goalY = g0;                          // 演出中は、ボスの登りを止める
+    activeBoss.y = goalY + 110;
+    tickExFinale();
+  }
+  if (currentDifficulty === 'fantasy' && gameState === 'playing') {
+    const idx = Math.floor(maxAltitude / FANTASY_AREA_M);
+    if (idx !== fantasyArea) {
+      fantasyArea = idx;
+      exFantasyApply(idx);
+      stageIntro = { t: 110, total: 110, boss: null, title: FANTASY_AREAS[idx % FANTASY_AREAS.length].name, sub: 'AREA ' + (idx + 1) };
+    }
+  }
+};
+
+const baseDrawFn13 = draw;
+draw = function () {
+  if (paused) return;
+  const fin = gameState === 'playing' && isExtraStage() && exPhase === 'finale' && !!activeBoss;
+  let saved = 0;
+  if (fin) { saved = activeBoss.hp; activeBoss.hp = 0; }   // 元のボスは描かず、自前で描く
+  baseDrawFn13();
+  if (fin) { activeBoss.hp = saved; drawExFinale(); }
+};
