@@ -15233,3 +15233,166 @@ cnMovieDraw = function (c, m) {
   else if (m >= 4090) { col = '255,255,255'; a = cnClamp((m - 4090) / 60); }
   if (col && a > 0) { c.fillStyle = 'rgba(' + col + ',' + a + ')'; c.fillRect(0, 0, W, H); }
 };
+
+
+/* SPLIT14 */
+// ==========================================
+// 全ストーリーステージを4分割
+//   各ステージを、長さ（ゴールのm数）はそのままで4つのステージにし、ステージ数を4倍にする
+//   対象: 日本列島篇 / 世界篇 / 宇宙編 / THE FANTASY
+//   ボスは、分割した最後のパートに出る
+//   PRACTICE / RECORD / EXTRA(否愚魔) は、そのまま
+// ==========================================
+const SPLIT_PARTS = 4;
+const SPLIT_ARCS = ['japan', 'world', 'space', 'fantasy'];
+const SPLIT_TEXT_ALL = true;   // true: 豆知識と台詞を、4つのパートすべてで出す / false: 豆知識は最後のパートだけ、台詞は1回だけ
+
+// ---------- ステージデータを4分割（配列は中身だけ入れ替える。FAN_STAGESも同じ配列なので一緒に変わる） ----------
+SPLIT_ARCS.forEach(arc => {
+  const list = STORY_DATA[arc];
+  if (!list || !list.length || list[0]._parts) return;
+  const out = [];
+  list.forEach((st, i) => {
+    // 台詞は、天の手のステージだけ最後のパート（ボスの手前）、ほかは最初のパート
+    const lineAt = (typeof FAN_BOSS !== 'undefined' && st.boss === FAN_BOSS) ? SPLIT_PARTS - 1 : 0;
+    for (let p = 0; p < SPLIT_PARTS; p++) {
+      out.push(Object.assign({}, st, {
+        name: st.name + '（' + (p + 1) + '/' + SPLIT_PARTS + '）',
+        baseName: st.name,
+        goal: st.goal,
+        boss: p === SPLIT_PARTS - 1 ? st.boss : null,
+        lines: (SPLIT_TEXT_ALL || p === lineAt) ? st.lines : [],
+        _part: p,
+        _parts: SPLIT_PARTS,
+        _orig: i
+      }));
+    }
+  });
+  list.splice(0, list.length, ...out);
+});
+
+// ---------- 進行状況の引き継ぎ（1回だけ）: クリア数を4倍にして、次のステージが開くようにする ----------
+try {
+  if (localStorage.getItem('wallKickSplit4') !== '1') {
+    SPLIT_ARCS.forEach(a => {
+      storyProgress[a] = Math.min(STORY_DATA[a].length, (storyProgress[a] || 0) * SPLIT_PARTS);
+    });
+    localStorage.setItem('wallKickStoryProgress', JSON.stringify(storyProgress));
+    localStorage.setItem('wallKickSplit4', '1');
+  }
+} catch (e) {}
+
+// ---------- ステージ設定: 序盤の弓兵の範囲と、ファンタジーの背景を、元のステージ単位にそろえる ----------
+const baseBuildStoryConfig14 = buildStoryConfig;
+buildStoryConfig = function (arc, idx) {
+  const c = baseBuildStoryConfig14(arc, idx);
+  if (arc === 'japan') c.archerChance = idx < 10 * SPLIT_PARTS ? 0.15 : 0.32;
+  if (arc === 'fantasy' && typeof FANTASY_AREAS !== 'undefined') {
+    const pal = FANTASY_AREAS[Math.floor(idx / SPLIT_PARTS) % FANTASY_AREAS.length];
+    c.bgTop = pal.bgTop;
+    c.bgBottom = pal.bgBottom;
+    c.wallColor = pal.wallColor;
+    c.wallLight = pal.wallLight;
+    c.wallDark = pal.wallDark;
+  }
+  return c;
+};
+
+// ---------- 結果画面: 豆知識の表示（SPLIT_TEXT_ALL が false なら、最後のパートだけ） ----------
+const baseShowResult14 = showResult;
+showResult = function (isClear) {
+  baseShowResult14(isClear);
+  if (!isClear || screenResult.classList.contains('hidden')) return;
+  const cfg = STAGES[currentDifficulty];
+  const info = cfg && cfg.isStory ? cfg.storyInfo : null;
+  if (!info || !info._parts) return;
+  if (!SPLIT_TEXT_ALL && info._part < info._parts - 1) {
+    document.getElementById('result-trivia-box').classList.add('hidden');
+    return;
+  }
+  // 見出しに「（1/4）」が混ざらないよう、元のステージ名だけにする
+  const head = document.getElementById('trivia-header');
+  if (head) head.textContent = head.textContent.replace(/（\d+\/\d+）/, '');
+};
+
+// ---------- ファンタジー: 台詞の話者名から「（1/4）」を外す ----------
+if (typeof utPush === 'function') {
+  const baseUtPush14 = utPush;
+  utPush = function (lines, name) {
+    baseUtPush14(lines, name ? name.replace(/（\d+\/\d+）$/, '') : name);
+  };
+}
+
+// ---------- ファンタジー: 一覧の表示（ボスのいないパートの「BOSS: null」を直す）と、隠し出口の位置 ----------
+if (typeof renderFantasyList === 'function' && typeof FAN_STAGES !== 'undefined') {
+  const baseRenderFantasyList14 = renderFantasyList;
+  renderFantasyList = function () {
+    baseRenderFantasyList14();
+    const items = document.querySelectorAll('#story-stage-list .story-item');
+    items.forEach((el, i) => {
+      const st = FAN_STAGES[i];
+      if (st && !st.boss) {
+        el.classList.remove('boss-stage');
+        const b = el.querySelector('.story-badge.boss');
+        if (b) {
+          b.classList.remove('boss');
+          b.textContent = st.region;
+        }
+      }
+    });
+    if (typeof FAN_EXIT_STAGE !== 'undefined') {
+      // 元の位置に付いた出口のヒントを外して、4分割後の位置に付け直す
+      const wrong = items[FAN_EXIT_STAGE];
+      if (wrong) {
+        const left = wrong.querySelector('div');
+        const last = left && left.lastElementChild;
+        if (last && (last.textContent === '？' || last.textContent === '出口')) left.removeChild(last);
+      }
+      const right = items[FAN_EXIT_STAGE * SPLIT_PARTS + 1];
+      if (fanLoop > 0 && right && !right.classList.contains('locked')) {
+        const badge = document.createElement('span');
+        badge.className = 'story-badge';
+        badge.style.cssText = 'background:#1E1E24;color:#FDE047;margin-left:4px;';
+        badge.textContent = fanEscaped ? '出口' : '？';
+        const left = right.querySelector('div');
+        if (left) left.appendChild(badge);
+      }
+    }
+  };
+}
+
+// 隠し出口は、元の「虚空の港」の2つ目のパートに、元と同じ高さの比率で置く
+if (typeof spawnFanExit === 'function' && typeof FAN_EXIT_STAGE !== 'undefined') {
+  spawnFanExit = function () {
+    fanExit = null;
+    fanExitTaken = false;
+    fanExitFx = 0;
+    if (!fanIsFantasy()) return;
+    if (currentStoryIndex !== FAN_EXIT_STAGE * SPLIT_PARTS + 1) return;
+    const goal = STORY_DATA.fantasy[currentStoryIndex].goal;
+    const midM = Math.floor(goal * 0.42);
+    const y = 580 - midM * PIXELS_PER_METER;
+    const w = 22, h = 36;
+    fanExit = { x: RIGHT_WALL_X - w - 2, y: y - h / 2, w: w, h: h, side: 'right' };
+  };
+}
+
+// ---------- 表示の更新: タブの話数、タイトルの「全N話」 ----------
+(function () {
+  const setText = (id, txt) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = txt;
+  };
+  setText('tab-japan', '日本列島篇 (' + STORY_DATA.japan.length + ')');
+  setText('tab-world', '世界篇 (' + STORY_DATA.world.length + ')');
+  setText('tab-space', '宇宙編 (' + STORY_DATA.space.length + ')');
+  if (typeof fanTab !== 'undefined' && typeof FAN_STAGES !== 'undefined') {
+    fanTab.textContent = 'THE FANTASY (' + FAN_STAGES.length + ')';
+  }
+  const tag = document.querySelector('.btn-story .stage-tag');
+  if (tag) {
+    let n = STORY_DATA.japan.length + STORY_DATA.world.length + STORY_DATA.space.length;
+    if (typeof fantasyUnlocked !== 'undefined' && fantasyUnlocked && typeof FAN_STAGES !== 'undefined') n += FAN_STAGES.length;
+    tag.textContent = '全' + n + '話';
+  }
+})();
