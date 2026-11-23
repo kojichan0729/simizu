@@ -1091,25 +1091,193 @@ body.extra-dark #game-wrapper {
   min-height: 24px;
 }
 
-/* ENDLESS STORY THE FANTASY（解禁後に、タイトル画面へ出る） */
-#fantasy-btn {
+/* split6: 追加のスタイルなし */
+
+/* ストーリーモードの「THE FANTASY」タブ（解禁後に4つ並ぶので、少し詰める） */
+.story-tabs.four .story-tab {
+  font-size: 10px;
+  padding: 8px 1px;
+  white-space: nowrap;
+}
+
+#tab-fantasy.active {
+  background: #F9A8D4;
+}
+
+/* 還元で現れる味方ボスのGIF（キャンバスの上、HUDやメニューの下に重ねる） */
+#kangen-gif {
+  position: absolute;
+  z-index: 1;
   display: none;
-  background: linear-gradient(90deg, #7C3AED, #EC4899);
+  pointer-events: none;
+}
+
+/* エンチャントのチップ（剣のカード・書の一覧） */
+.ench-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 900;
+  color: #1E1E24;
+  padding: 1px 6px;
+  border: 1.5px solid #1E1E24;
+  border-radius: 2px;
+}
+
+/* ガチャ演出の画面（ゲーム画面全体を覆う） */
+#gacha-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: none;
+  background: #000000;
+}
+
+#gacha-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#gacha-skip,
+#gacha-ok {
+  position: absolute;
+  bottom: 18px;
+  left: 110px;
+  width: 200px;
+  justify-content: center;
+}
+
+#gacha-ok {
+  display: none;
+}
+
+/* Undertale風ダイアログ */
+#ut-dialogue {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 14px;
+  z-index: 35;
+  display: none;
+  pointer-events: auto;
+}
+#ut-dialogue .ut-inner {
+  background: #000000;
+  border: 4px solid #FFFFFF;
+  border-radius: 2px;
+  padding: 12px 14px 10px;
+  min-height: 84px;
+  box-shadow: 0 0 0 2px #000000;
+  font-family: 'Shippori Mincho', 'Yu Mincho', '游明朝', serif;
+}
+#ut-name {
+  color: #FACC15;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  min-height: 16px;
+}
+#ut-text {
   color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+  white-space: pre-wrap;
+  min-height: 48px;
+}
+#ut-hint {
+  text-align: right;
+  color: #94A3B8;
+  font-size: 10px;
+  margin-top: 4px;
+  font-family: 'M PLUS Rounded 1c', sans-serif;
 }
 
-body.fantasy-on #fantasy-btn {
-  display: flex;
+.fan-story-head {
+  text-align: left;
+  padding: 4px 6px 10px;
+}
+.fan-story-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #F9A8D4;
+  letter-spacing: 0.04em;
+}
+.fan-story-sub {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748B;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.story-item.fan-final {
+  background: linear-gradient(90deg, #2A2433, #3B2A1A);
+  color: #FDE047;
+  border-color: #FACC15;
+}
+#hud-stage.fantasy-mode {
+  background: #F9A8D4;
+  color: #1E1E24;
 }
 
-body.fantasy-on #screen-title .btn-group {
-  gap: 8px;
+/* 軽いグラフィック強化（CPU負荷の低いCSS） */
+body.gfx-boost #game-wrapper {
+  box-shadow: 0 12px 40px rgba(15, 12, 24, 0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
+}
+body.gfx-boost .home-char-showcase {
+  background: linear-gradient(160deg, #FFF7ED 0%, #FCE7F3 45%, #E0E7FF 100%);
+  border: 2px solid #1E1E24;
+  box-shadow: 3px 3px 0 #1E1E24;
+}
+body.gfx-boost .title-badge {
+  letter-spacing: 0.12em;
+}
+body.gfx-boost .btn {
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+body.gfx-boost .btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+body.gfx-boost #screen-title h1 {
+  text-shadow: 3px 3px 0 rgba(30,30,36,0.12);
 }
 
-body.fantasy-on #screen-title .btn {
-  padding: 9px 14px;
-}
+/* 出口ドア用（追加スタイルほぼ不要。リストの？印はJS側） */
 
-body.fantasy-on #screen-title .controls-hint {
+/* split11: 追加のスタイルなし */
+
+/* 出口の先の演出・ムービー（ゲーム画面全体を覆う。ムービー中は文字を出さない） */
+#cine-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
   display: none;
+  background: #000000;
 }
+
+#cine-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#cine-spin {
+  position: absolute;
+  bottom: 22px;
+  left: 90px;
+  width: 240px;
+  display: none;
+  justify-content: center;
+  font-size: 20px;
+  animation: cinePulse 0.9s ease-in-out infinite;
+}
+
+@keyframes cinePulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.18); }
+}
+
+/* split13: 追加のスタイルなし */
