@@ -15396,3 +15396,2324 @@ if (typeof spawnFanExit === 'function' && typeof FAN_EXIT_STAGE !== 'undefined')
     tag.textContent = '全' + n + '話';
   }
 })();
+
+
+/* SPLIT15 */
+// ==========================================================================
+// 0. タイトル画面下部の操作説明を削除
+// ==========================================================================
+(function () {
+  document.querySelectorAll('.controls-hint').forEach(el => el.remove());
+})();
+
+// ==========================================================================
+// 1. ステージ分割の再編
+//    ・日本列島篇 / 世界篇 のみ 3分割（ステージ数3倍）＋地名分割
+//    ・宇宙編 / THE FANTASY は通常のステージ数（1倍）
+// ==========================================================================
+(function () {
+  const TARGET_ARCS = ['japan', 'world'];
+  const ALL_ARCS = ['japan', 'world', 'space', 'fantasy'];
+  const NEW_PARTS = 3;
+
+  const JAPAN_SUBREGIONS = {
+    '北海道': ['道央・札幌', '道北・旭川', '道東・十勝'],
+    '青森県': ['津軽・弘前', '陸奥・青森', '南部・八戸'],
+    '岩手県': ['盛岡・県央', '平泉・県南', '三陸・宮古'],
+    '宮城県': ['仙台・仙南', '松島・大崎', '気仙沼・三陸'],
+    '秋田県': ['秋田・男鹿', '大館・白神', '横手・角館'],
+    '山形県': ['村山・蔵王', '庄内・酒田', '置賜・米沢'],
+    '福島県': ['中通り・郡山', '会津・磐梯', '浜通り・いわき'],
+    '茨城県': ['水戸・笠間', 'つくば・県西', '鹿行・大洗'],
+    '栃木県': ['宇都宮・県央', '日光・那須', '足利・佐野'],
+    '群馬県': ['前橋・高崎', '草津・吾妻', '桐生・館林'],
+    '埼玉県': ['さいたま・県央', '川越・所沢', '秩父・長瀞'],
+    '千葉県': ['千葉・幕張', '成田・銚子', '房総・館山'],
+    '東京都': ['東京23区', '多摩・八王子', '奥多摩・島しょ'],
+    '神奈川県': ['横浜・川崎', '鎌倉・湘南', '箱根・小田原'],
+    '新潟県': ['新潟・下越', '長岡・魚沼', '上越・佐渡'],
+    '富山県': ['富山・立山', '高岡・氷見', '黒部・魚津'],
+    '石川県': ['金沢・加賀', '白山・小松', '能登・輪島'],
+    '福井県': ['福井・永平寺', '勝山・大野', '敦賀・若狭'],
+    '山梨県': ['甲府・昇仙峡', '富士五湖', '八ヶ岳・清里'],
+    '長野県': ['長野・志賀', '松本・上高地', '諏訪・軽井沢'],
+    '岐阜県': ['岐阜・美濃', '飛騨高山', '白川郷・下呂'],
+    '静岡県': ['静岡・清水', '浜松・浜名湖', '伊豆・富士山麓'],
+    '愛知県': ['名古屋・尾張', '豊田・西三河', '豊橋・渥美'],
+    '三重県': ['津・伊賀', '伊勢・志摩', '熊野・尾鷲'],
+    '滋賀県': ['大津・比叡', '彦根・長浜', '近江八幡・甲賀'],
+    '京都府': ['京都市内', '宇治・南山城', '天橋立・丹後'],
+    '大阪府': ['キタ・大阪城', 'ミナミ・堺', '北摂・河内'],
+    '兵庫県': ['神戸・六甲', '姫路・播磨', '城崎・淡路島'],
+    '奈良県': ['奈良公園・斑鳩', '飛鳥・橿原', '吉野・十津川'],
+    '和歌山県': ['和歌山・高野山', '白浜・田辺', '那智勝浦・熊野'],
+    '鳥取県': ['鳥取砂丘・因幡', '倉吉・三朝', '米子・大山'],
+    '島根県': ['松江・宍道湖', '出雲大社・大田', '石見銀山・津和野'],
+    '岡山県': ['岡山・吉備', '倉敷・瀬戸内', '津山・蒜山'],
+    '広島県': ['広島・宮島', '呉・しまなみ', '尾道・福山'],
+    '山口県': ['下関・角島', '山口・秋吉台', '萩・岩国'],
+    '徳島県': ['徳島・鳴門', '祖谷・大歩危', '阿南・海部'],
+    '香川県': ['高松・屋島', '丸亀・琴平', '小豆島・直島'],
+    '愛媛県': ['松山・道後', '今治・しまなみ', '宇和島・大洲'],
+    '高知県': ['高知・桂浜', '室戸・安芸', '四万十・足摺'],
+    '福岡県': ['博多・天神', '北九州・門司', '太宰府・柳川'],
+    '佐賀県': ['佐賀・吉野ヶ里', '唐津・呼子', '有田・嬉野'],
+    '長崎県': ['長崎・雲仙', '佐世保・平戸', '五島・対馬'],
+    '熊本県': ['熊本城・県央', '阿蘇・黒川', '天草・人吉'],
+    '大分県': ['大分・別府', '湯布院・九重', '日田・臼杵'],
+    '宮崎県': ['宮崎・青島', '高千穂・延岡', '日南・都城'],
+    '鹿児島県': ['鹿児島・桜島', '霧島・指宿', '屋久島・奄美'],
+    '沖縄県': ['那覇・首里', '恩納・美ら海', '石垣・宮古諸島']
+  };
+
+  const WORLD_SUBAREAS = ['西エリア', '中央エリア', '東エリア'];
+
+  ALL_ARCS.forEach(arc => {
+    const list = STORY_DATA[arc];
+    if (!list || !list.length || !list[0]._parts) return;
+    const restored = [];
+    const oldParts = list[0]._parts;
+    for (let i = 0; i < list.length; i += oldParts) {
+      const chunk = list.slice(i, i + oldParts);
+      const last = chunk[chunk.length - 1];
+      const first = chunk[0];
+      const baseName = first.baseName || first.name.replace(/（\d+\/\d+）$/, '');
+      const clean = Object.assign({}, first, {
+        name: baseName,
+        boss: last.boss,
+        lines: (first.lines && first.lines.length) ? first.lines : last.lines
+      });
+      delete clean._part;
+      delete clean._parts;
+      delete clean._orig;
+      delete clean.baseName;
+      restored.push(clean);
+    }
+    list.splice(0, list.length, ...restored);
+  });
+
+  TARGET_ARCS.forEach(arc => {
+    const list = STORY_DATA[arc];
+    if (!list || !list.length) return;
+    const out = [];
+    list.forEach((st, i) => {
+      const subs = (arc === 'japan' && JAPAN_SUBREGIONS[st.name])
+        ? JAPAN_SUBREGIONS[st.name]
+        : WORLD_SUBAREAS;
+      for (let p = 0; p < NEW_PARTS; p++) {
+        out.push(Object.assign({}, st, {
+          name: st.name + '（' + subs[p] + '）',
+          baseName: st.name,
+          goal: st.goal,
+          boss: p === NEW_PARTS - 1 ? st.boss : null,
+          lines: (typeof SPLIT_TEXT_ALL !== 'undefined' && SPLIT_TEXT_ALL) || p === 0 ? st.lines : [],
+          _part: p,
+          _parts: NEW_PARTS,
+          _orig: i
+        }));
+      }
+    });
+    list.splice(0, list.length, ...out);
+  });
+
+  try {
+    if (localStorage.getItem('wallKickSplit15_v1') !== '1') {
+      const was4 = localStorage.getItem('wallKickSplit4') === '1';
+      TARGET_ARCS.forEach(a => {
+        let p = storyProgress[a] || 0;
+        if (was4) p = Math.floor(p / 4);
+        storyProgress[a] = Math.min(STORY_DATA[a].length, p * NEW_PARTS);
+      });
+      ['space', 'fantasy'].forEach(a => {
+        if (!STORY_DATA[a]) return;
+        let p = storyProgress[a] || 0;
+        if (was4) p = Math.floor(p / 4);
+        storyProgress[a] = Math.min(STORY_DATA[a].length, p);
+      });
+      localStorage.setItem('wallKickStoryProgress', JSON.stringify(storyProgress));
+      localStorage.setItem('wallKickSplit15_v1', '1');
+    }
+  } catch (e) {}
+
+  const prevBuildStoryConfig15 = buildStoryConfig;
+  buildStoryConfig = function (arc, idx) {
+    const c = prevBuildStoryConfig15(arc, idx);
+    if (arc === 'japan') {
+      c.archerChance = idx < 10 * NEW_PARTS ? 0.15 : 0.32;
+    }
+    if (arc === 'fantasy' && typeof FANTASY_AREAS !== 'undefined') {
+      const pal = FANTASY_AREAS[idx % FANTASY_AREAS.length];
+      c.bgTop = pal.bgTop;
+      c.bgBottom = pal.bgBottom;
+      c.wallColor = pal.wallColor;
+      c.wallLight = pal.wallLight;
+      c.wallDark = pal.wallDark;
+    }
+    return c;
+  };
+
+  if (typeof spawnFanExit === 'function' && typeof FAN_EXIT_STAGE !== 'undefined') {
+    spawnFanExit = function () {
+      fanExit = null;
+      fanExitTaken = false;
+      fanExitFx = 0;
+      if (!fanIsFantasy()) return;
+      if (currentStoryIndex !== FAN_EXIT_STAGE) return;
+      const goal = STORY_DATA.fantasy[currentStoryIndex].goal;
+      const midM = Math.floor(goal * 0.42);
+      const y = 580 - midM * PIXELS_PER_METER;
+      const w = 22, h = 36;
+      fanExit = { x: RIGHT_WALL_X - w - 2, y: y - h / 2, w: w, h: h, side: 'right' };
+    };
+  }
+
+  const prevShowResult15 = showResult;
+  showResult = function (isClear) {
+    prevShowResult15(isClear);
+    const head = document.getElementById('trivia-header');
+    if (head) head.textContent = head.textContent.replace(/（[^）]+）/, '');
+  };
+
+  const setText = (id, txt) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = txt;
+  };
+  setText('tab-japan', '日本列島篇 (' + STORY_DATA.japan.length + ')');
+  setText('tab-world', '世界篇 (' + STORY_DATA.world.length + ')');
+  setText('tab-space', '宇宙編 (' + STORY_DATA.space.length + ')');
+  if (typeof fanTab !== 'undefined' && typeof FAN_STAGES !== 'undefined') {
+    fanTab.textContent = 'THE FANTASY (' + FAN_STAGES.length + ')';
+  }
+  const tag = document.querySelector('.btn-story .stage-tag');
+  if (tag) {
+    let n = STORY_DATA.japan.length + STORY_DATA.world.length + STORY_DATA.space.length;
+    if (typeof fantasyUnlocked !== 'undefined' && fantasyUnlocked && typeof FAN_STAGES !== 'undefined') {
+      n += FAN_STAGES.length;
+    }
+    tag.textContent = '全' + n + '話';
+  }
+})();
+
+
+// ==========================================================================
+// 2. Recordモード 120m付近のコイン塊バグ修正
+//    ・120m (y ≈ -2540) 付近のセグメント継ぎ目でトゲの安全位置補正が走った際や
+//      連続生成時にコイン列が重複・密集するのを防止
+//    ・縦間隔（最低52px）と同時存在数の上限をチェックし、塊発生を根絶
+// ==========================================================================
+(function () {
+  let lastSpawnedCoinTopY = Infinity;
+
+  const baseInitStageRecordFix = initStage;
+  initStage = function (config) {
+    lastSpawnedCoinTopY = Infinity;
+    baseInitStageRecordFix(config);
+    if (config && config.isRecord) {
+      dedupeRecordCoins();
+    }
+  };
+
+  const baseSpawnCoinLine15 = spawnCoinLine;
+  spawnCoinLine = function (x, startY, count, spacingY = 30) {
+    // 直前に配置したコイン列とY座標が近すぎる場合はスキップ（塊防止）
+    const safeCount = Math.min(4, Math.max(1, count));
+    const topY = startY - (safeCount - 1) * spacingY;
+    if (Math.abs(startY - lastSpawnedCoinTopY) < 64) {
+      return;
+    }
+    // すでに近くにコインが存在する場合もスキップ
+    const hasNear = coins.some(c => !c.collected && Math.abs(c.y - startY) < 56);
+    if (hasNear) return;
+
+    lastSpawnedCoinTopY = topY;
+    baseSpawnCoinLine15(x, startY, safeCount, spacingY);
+  };
+
+  function dedupeRecordCoins() {
+    if (!coins || coins.length < 2) return;
+    coins.sort((a, b) => b.y - a.y);
+    const cleaned = [];
+    let clusterCount = 0;
+    let prevY = Infinity;
+    for (let i = 0; i < coins.length; i++) {
+      const c = coins[i];
+      if (Math.abs(c.y - prevY) < 22) continue; // ほぼ同高度の重複コインを除去
+      if (Math.abs(c.y - prevY) < 42) {
+        clusterCount++;
+        if (clusterCount >= 4) continue; // 5個以上の異常な塊をカット
+      } else {
+        clusterCount = 0;
+      }
+      cleaned.push(c);
+      prevY = c.y;
+    }
+    coins.splice(0, coins.length, ...cleaned);
+  }
+
+  const baseGenerateSegment15 = generateSegment;
+  generateSegment = function (fromY, toY, config) {
+    baseGenerateSegment15(fromY, toY, config);
+    if (config && config.isRecord) {
+      dedupeRecordCoins();
+    }
+  };
+})();
+
+
+// ==========================================================================
+// 3. 新要素「醸造」データ ＆ バトル中使用できる消耗品ポーションシステム
+//    ・素材価格を少し値下げ
+//    ・ポーションは装備してバトル中に使用（1回使うと消費される消耗品）
+// ==========================================================================
+const BREW_MATERIALS = [
+  {
+    id: 'herb', name: '薬草', rarity: 'N', col: '#4ADE80', price: 30, power: 1, desc: '基本の薬草',
+    svg: '<svg viewBox="0 0 48 48"><path d="M24 40V14" stroke="#16A34A" stroke-width="3" stroke-linecap="round"/><path d="M24 30C14 30 10 20 12 14C18 14 24 20 24 30Z" fill="#4ADE80" stroke="#1E1E24" stroke-width="2"/><path d="M24 24C34 24 38 14 36 8C30 8 24 14 24 24Z" fill="#22C55E" stroke="#1E1E24" stroke-width="2"/><path d="M24 16C19 10 21 5 24 4C27 5 29 10 24 16Z" fill="#86EFAC" stroke="#1E1E24" stroke-width="2"/></svg>'
+  },
+  {
+    id: 'dew', name: '朝露の水', rarity: 'N', col: '#38BDF8', price: 40, power: 1, desc: '澄んだ朝の雫',
+    svg: '<svg viewBox="0 0 48 48"><path d="M24 6C24 6 10 22 10 31C10 38.7 16.3 44 24 44C31.7 44 38 38.7 38 31C38 22 24 6 24 6Z" fill="#38BDF8" stroke="#1E1E24" stroke-width="2.5"/><path d="M17 28C17 24 20 19 22 16" stroke="#E0F2FE" stroke-width="3" stroke-linecap="round" fill="none"/></svg>'
+  },
+  {
+    id: 'shroom', name: '夜光茸', rarity: 'R', col: '#A78BFA', price: 115, power: 2, desc: '黄金を引き寄せる茸',
+    svg: '<svg viewBox="0 0 48 48"><rect x="19" y="25" width="10" height="16" rx="2" fill="#E2E8F0" stroke="#1E1E24" stroke-width="2"/><path d="M8 26C8 14 15 8 24 8C33 8 40 14 40 26Z" fill="#8B5CF6" stroke="#1E1E24" stroke-width="2.5"/><circle cx="18" cy="18" r="3" fill="#DDD6FE"/><circle cx="29" cy="16" r="2.5" fill="#DDD6FE"/><circle cx="24" cy="22" r="2" fill="#FDE047"/></svg>'
+  },
+  {
+    id: 'ember', name: '火蜥蜴の尾', rarity: 'R', col: '#FB923C', price: 150, power: 2, desc: '剛力を宿す熱い尾',
+    svg: '<svg viewBox="0 0 48 48"><path d="M12 38C10 26 22 24 20 12C28 14 34 22 30 32C35 28 38 22 36 16C42 24 38 40 22 42C16 42 13 40 12 38Z" fill="#F97316" stroke="#1E1E24" stroke-width="2.2"/><path d="M18 37C17 30 24 28 24 21C28 24 30 31 24 37Z" fill="#FACC15"/></svg>'
+  },
+  {
+    id: 'scale', name: '古竜の鱗', rarity: 'SR', col: '#F43F5E', price: 350, power: 4, desc: '鉄壁の護りを生む鱗',
+    svg: '<svg viewBox="0 0 48 48"><polygon points="24,4 40,16 36,36 24,44 12,36 8,16" fill="#E11D48" stroke="#1E1E24" stroke-width="2.5"/><polygon points="24,10 34,18 31,32 24,38 17,32 14,18" fill="#FB7185" stroke="#1E1E24" stroke-width="1.5"/><line x1="24" y1="4" x2="24" y2="44" stroke="#1E1E24" stroke-width="1.5"/></svg>'
+  },
+  {
+    id: 'stardust', name: '星屑の結晶', rarity: 'SSR', col: '#FACC15', price: 750, power: 7, desc: '伝説級の神秘結晶',
+    svg: '<svg viewBox="0 0 48 48"><polygon points="24,3 29,17 44,17 32,26 36,41 24,32 12,41 16,26 4,17 19,17" fill="#FACC15" stroke="#1E1E24" stroke-width="2.2"/><polygon points="24,10 27,19 36,19 29,24 31,33 24,28 17,33 19,24 12,19 21,19" fill="#FEF9C3"/></svg>'
+  }
+];
+
+const POTION_TYPES = [
+  {
+    id: 'swift_brew',
+    short: '疾風霊薬',
+    name: '疾風迅雷の霊薬',
+    col: '#38BDF8',
+    desc: (lv) => `[消費] 待機即解除＆${6 + lv * 2}秒間クールタイム半減`
+  },
+  {
+    id: 'gold_brew',
+    short: '黄金秘薬',
+    name: '黄金招来の秘薬',
+    col: '#FACC15',
+    desc: (lv) => `[消費] 即コイン+${lv * 15}枚＆${8 + lv * 2}秒間コイン2倍`
+  },
+  {
+    id: 'slayer_brew',
+    short: '鬼神霊薬',
+    name: '鬼神剛力の霊薬',
+    col: '#F43F5E',
+    desc: (lv) => `[消費] ${7 + lv * 2}秒間コウモリ撃破100%＆回転時間延長`
+  },
+  {
+    id: 'guardian_brew',
+    short: '金剛聖薬',
+    name: '金剛不壊の聖薬',
+    col: '#34D399',
+    desc: (lv) => `[消費] 即座に ${lv} 回分の身代わりバリアを展開`
+  }
+];
+
+let brewSave = {
+  mats: { herb: 2, dew: 2, shroom: 0, ember: 0, scale: 0, stardust: 0 },
+  potions: [],
+  equippedUid: null
+};
+try {
+  const raw = JSON.parse(localStorage.getItem('wallKickBrew_v1') || 'null');
+  if (raw && typeof raw === 'object') {
+    brewSave.mats = Object.assign(brewSave.mats, raw.mats || {});
+    brewSave.potions = Array.isArray(raw.potions) ? raw.potions : [];
+    brewSave.equippedUid = raw.equippedUid || null;
+  }
+} catch (e) {}
+
+function saveBrew() {
+  try { localStorage.setItem('wallKickBrew_v1', JSON.stringify(brewSave)); } catch (e) {}
+}
+function getEquippedPotion() {
+  if (!brewSave.equippedUid) return null;
+  const found = brewSave.potions.find(p => p.uid === brewSave.equippedUid) || null;
+  if (!found) brewSave.equippedUid = null;
+  return found;
+}
+
+function calcBrewPreview(chosen) {
+  if (chosen.length < 2) return null;
+  let totalPower = 0;
+  chosen.forEach(id => {
+    const m = BREW_MATERIALS.find(x => x.id === id);
+    if (m) totalPower += m.power;
+  });
+  let lv = 1;
+  if (totalPower >= 15) lv = 5;
+  else if (totalPower >= 10) lv = 4;
+  else if (totalPower >= 6) lv = 3;
+  else if (totalPower >= 4) lv = 2;
+
+  let typeIdx = 0;
+  if (chosen.includes('stardust') || chosen.includes('scale')) {
+    typeIdx = chosen.includes('ember') ? 2 : 3;
+  } else if (chosen.includes('shroom')) {
+    typeIdx = 1;
+  } else if (chosen.includes('ember')) {
+    typeIdx = 2;
+  } else {
+    typeIdx = 0;
+  }
+  return { pType: POTION_TYPES[typeIdx], lv: lv };
+}
+
+let stageFoundMats = [];
+let activePotionBuff = null; // { typeId, lv, frames, shield }
+
+// バトル中ポーション使用ボタン生成
+const battlePotionBtn = (function () {
+  const wrapper = document.getElementById('game-wrapper');
+  if (!wrapper) return null;
+  const btn = document.createElement('button');
+  btn.id = 'battle-potion-btn';
+  wrapper.appendChild(btn);
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    useBattlePotion();
+  });
+  return btn;
+})();
+
+function useBattlePotion() {
+  if (gameState !== 'playing') return;
+  const pot = getEquippedPotion();
+  if (!pot) return;
+
+  // 消耗品なので所持リストから1本消費（同種があれば次を自動装備）
+  const idx = brewSave.potions.findIndex(p => p.uid === pot.uid);
+  if (idx !== -1) brewSave.potions.splice(idx, 1);
+  const nextSame = brewSave.potions.find(p => p.typeId === pot.typeId) || brewSave.potions[0] || null;
+  brewSave.equippedUid = nextSame ? nextSame.uid : null;
+  saveBrew();
+
+  const lv = pot.lv;
+  if (pot.typeId === 'swift_brew') {
+    player.lockoutTimer = 0;
+    activePotionBuff = { typeId: 'swift_brew', lv, frames: (6 + lv * 2) * 60, shield: 0 };
+  } else if (pot.typeId === 'gold_brew') {
+    stageCoins += lv * 15;
+    activePotionBuff = { typeId: 'gold_brew', lv, frames: (8 + lv * 2) * 60, shield: 0 };
+  } else if (pot.typeId === 'slayer_brew') {
+    activePotionBuff = { typeId: 'slayer_brew', lv, frames: (7 + lv * 2) * 60, shield: 0 };
+  } else if (pot.typeId === 'guardian_brew') {
+    activePotionBuff = { typeId: 'guardian_brew', lv, frames: 99999, shield: lv };
+  }
+
+  if (typeof playSound === 'function') playSound('clear');
+  if (typeof spawnParticles === 'function') {
+    spawnParticles(player.x + player.size / 2, player.y + player.size / 2, pot.col, 24, false);
+  }
+}
+
+window.addEventListener('keydown', (e) => {
+  if (gameState === 'playing' && (e.key === 'c' || e.key === 'C')) {
+    useBattlePotion();
+  }
+});
+
+const baseInitStage15_pot = initStage;
+initStage = function (config) {
+  baseInitStage15_pot(config);
+  stageFoundMats = [];
+  activePotionBuff = null;
+};
+
+const baseUpdate15 = update;
+update = function () {
+  const prevCoins = stageCoins;
+  const prevBats = typeof bats !== 'undefined' ? bats.length : 0;
+  baseUpdate15();
+  if (gameState !== 'playing') return;
+
+  if (activePotionBuff) {
+    if (activePotionBuff.frames > 0) {
+      activePotionBuff.frames--;
+      if (activePotionBuff.frames <= 0 && activePotionBuff.shield <= 0) {
+        activePotionBuff = null;
+      }
+    }
+  }
+
+  if (stageCoins > prevCoins && activePotionBuff && activePotionBuff.typeId === 'gold_brew') {
+    stageCoins += (stageCoins - prevCoins);
+  }
+
+  const gotCoin = stageCoins > prevCoins;
+  const killedBat = typeof bats !== 'undefined' && bats.length < prevBats;
+  if (gotCoin || killedBat) {
+    const dropChance = killedBat ? 0.16 : 0.035;
+    if (Math.random() < dropChance) {
+      const r = Math.random();
+      let mat = BREW_MATERIALS[0];
+      if (r < 0.03) mat = BREW_MATERIALS[5];
+      else if (r < 0.10) mat = BREW_MATERIALS[4];
+      else if (r < 0.28) mat = BREW_MATERIALS[3];
+      else if (r < 0.50) mat = BREW_MATERIALS[2];
+      else if (r < 0.75) mat = BREW_MATERIALS[1];
+
+      brewSave.mats[mat.id] = (brewSave.mats[mat.id] || 0) + 1;
+      stageFoundMats.push(mat.name);
+      saveBrew();
+      if (typeof spawnParticles === 'function') {
+        spawnParticles(player.x + player.size / 2, player.y, mat.col, 10, false);
+      }
+    }
+  }
+};
+
+const basePerformSpinAttack15 = performSpinAttack;
+performSpinAttack = function () {
+  const before = player.lockoutTimer;
+  basePerformSpinAttack15();
+  if (!activePotionBuff || gameState !== 'playing') return;
+  if (before <= 0 && player.lockoutTimer > 0 && player.spinTimer > 0) {
+    if (activePotionBuff.typeId === 'swift_brew') {
+      player.lockoutTimer = Math.max(8, Math.round(player.lockoutTimer * 0.5));
+    } else if (activePotionBuff.typeId === 'slayer_brew') {
+      player.spinTimer += 8 + activePotionBuff.lv * 3;
+    }
+  }
+};
+
+const baseGetCurrentSword15 = getCurrentSword;
+getCurrentSword = function () {
+  const sw = baseGetCurrentSword15();
+  if (activePotionBuff && activePotionBuff.typeId === 'slayer_brew') {
+    return Object.assign({}, sw, { batKillRate: 1.0 });
+  }
+  return sw;
+};
+
+const baseShowResult15_shield = showResult;
+showResult = function (isClear) {
+  if (!isClear && gameState === 'playing' && activePotionBuff && activePotionBuff.shield > 0) {
+    activePotionBuff.shield--;
+    if (activePotionBuff.shield <= 0) activePotionBuff = null;
+    player.vy = -12;
+    if (typeof playSound === 'function') playSound('clash');
+    if (typeof spawnParticles === 'function') {
+      spawnParticles(player.x + player.size / 2, player.y + player.size / 2, '#34D399', 26, true);
+    }
+    return;
+  }
+  activePotionBuff = null;
+  baseShowResult15_shield(isClear);
+
+  const oldNotice = document.getElementById('brew-drop-notice');
+  if (oldNotice) oldNotice.remove();
+  if (stageFoundMats.length > 0 && !screenResult.classList.contains('hidden')) {
+    const box = document.createElement('div');
+    box.id = 'brew-drop-notice';
+    box.style.cssText = 'margin:6px 0; padding:6px 10px; background:#0F172A; color:#FFD600; border:3px solid #1E1E24; border-radius:3px; box-shadow:3px 3px 0 #1E1E24; font-size:12px; font-weight:900;';
+    box.textContent = '醸造素材を獲得: ' + stageFoundMats.join(' / ');
+    const triviaBox = document.getElementById('result-trivia-box');
+    if (triviaBox && triviaBox.parentNode) {
+      triviaBox.parentNode.insertBefore(box, triviaBox);
+    }
+  }
+};
+
+
+// ==========================================================================
+// 4. ショップの「醸造」タブ
+// ==========================================================================
+let brewSlots = [null, null, null];
+
+function brewCombine() {
+  const chosen = brewSlots.filter(Boolean);
+  const preview = calcBrewPreview(chosen);
+  if (!preview) {
+    if (typeof playSound === 'function') playSound('hit');
+    return;
+  }
+  const need = {};
+  chosen.forEach(id => need[id] = (need[id] || 0) + 1);
+  for (const id in need) {
+    if ((brewSave.mats[id] || 0) < need[id]) {
+      if (typeof playSound === 'function') playSound('hit');
+      return;
+    }
+  }
+  for (const id in need) brewSave.mats[id] -= need[id];
+
+  const newPotion = {
+    uid: 'pot_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
+    typeId: preview.pType.id,
+    short: `${preview.pType.short}Lv${preview.lv}`,
+    name: `${preview.pType.name} Lv.${preview.lv}`,
+    lv: preview.lv,
+    col: preview.pType.col,
+    desc: preview.pType.desc(preview.lv)
+  };
+  brewSave.potions.unshift(newPotion);
+  brewSave.equippedUid = newPotion.uid;
+  brewSlots = [null, null, null];
+  saveBrew();
+
+  if (typeof gSfx === 'function') gSfx('chime', Math.min(3, preview.lv - 1));
+  else if (typeof playSound === 'function') playSound('clear');
+  renderBrewGrid();
+}
+
+function renderBrewGrid() {
+  const grid = document.getElementById('skin-grid');
+  grid.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'brew-wrap';
+
+  const chosen = brewSlots.filter(Boolean);
+  const preview = calcBrewPreview(chosen);
+
+  const panel = document.createElement('div');
+  panel.className = 'brew-panel';
+  panel.innerHTML = `
+    <div class="brew-head">
+      <div class="brew-title">調合釜（素材を2〜3個選択）</div>
+      <div class="brew-badge">${preview ? `${preview.pType.name} Lv.${preview.lv}` : '未選択'}</div>
+    </div>
+  `;
+
+  const slotsRow = document.createElement('div');
+  slotsRow.className = 'brew-slots';
+
+  brewSlots.forEach((matId, idx) => {
+    const sl = document.createElement('div');
+    const mat = BREW_MATERIALS.find(m => m.id === matId);
+    sl.className = 'brew-slot' + (mat ? ' filled' : '');
+    if (mat) {
+      sl.innerHTML = `
+        ${mat.svg}
+        <span style="font-size:10px;font-weight:900;color:${mat.col};margin-top:2px;">${mat.name}</span>
+        <span style="font-size:9px;color:#94A3B8;">解除</span>
+      `;
+      sl.onclick = () => { brewSlots[idx] = null; renderBrewGrid(); };
+    } else {
+      sl.innerHTML = `<span style="font-size:11px;font-weight:900;color:#94A3B8;">枠 ${idx + 1}</span>`;
+    }
+    slotsRow.appendChild(sl);
+  });
+  panel.appendChild(slotsRow);
+
+  const craftBtn = document.createElement('button');
+  craftBtn.className = 'jutsu-btn ' + (preview ? 'buy' : 'dim');
+  craftBtn.style.width = '100%';
+  craftBtn.textContent = preview
+    ? `醸造する（${preview.pType.name} Lv.${preview.lv}）`
+    : '下の素材を2つ以上投入してください';
+  craftBtn.onclick = brewCombine;
+  panel.appendChild(craftBtn);
+  wrap.appendChild(panel);
+
+  const matPanel = document.createElement('div');
+  matPanel.className = 'brew-panel light';
+  matPanel.innerHTML = `
+    <div class="brew-head">
+      <div class="brew-title">醸造素材（購入 / 釜へ投入）</div>
+      <div class="brew-badge">希少素材ほど強力</div>
+    </div>
+  `;
+  const matGrid = document.createElement('div');
+  matGrid.className = 'brew-mat-grid';
+
+  BREW_MATERIALS.forEach(mat => {
+    const count = brewSave.mats[mat.id] || 0;
+    const used = brewSlots.filter(x => x === mat.id).length;
+    const canPut = count > used && brewSlots.includes(null);
+    const canBuy = totalCoins >= mat.price;
+
+    const card = document.createElement('div');
+    card.className = 'brew-mat-card';
+    card.innerHTML = `
+      <div class="brew-mat-top">
+        <div class="brew-mat-icon">${mat.svg}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:900;">[${mat.rarity}] ${mat.name}</div>
+          <div style="font-size:10px;font-weight:800;color:#475569;">所持: ${count}個</div>
+          <div style="font-size:9px;color:#64748B;">${mat.desc}</div>
+        </div>
+      </div>
+    `;
+    const btnRow = document.createElement('div');
+    btnRow.className = 'jutsu-row';
+
+    const putBtn = document.createElement('button');
+    putBtn.className = 'jutsu-btn ' + (canPut ? 'on' : 'dim');
+    putBtn.style.cssText = 'font-size:10px;padding:5px 2px;';
+    putBtn.textContent = '投入';
+    putBtn.onclick = () => {
+      const empty = brewSlots.indexOf(null);
+      if (empty !== -1 && count > used) {
+        brewSlots[empty] = mat.id;
+        if (typeof playSound === 'function') playSound('kick');
+        renderBrewGrid();
+      }
+    };
+
+    const buyBtn = document.createElement('button');
+    buyBtn.className = 'jutsu-btn ' + (canBuy ? 'buy' : 'dim');
+    buyBtn.style.cssText = 'font-size:10px;padding:5px 2px;';
+    buyBtn.textContent = `${mat.price}枚`;
+    buyBtn.onclick = () => {
+      if (totalCoins >= mat.price) {
+        totalCoins -= mat.price;
+        brewSave.mats[mat.id] = (brewSave.mats[mat.id] || 0) + 1;
+        saveBrew();
+        saveCoinAndSkinData();
+        document.getElementById('shop-total-coins').textContent = totalCoins;
+        const titleCoin = document.getElementById('title-total-coins');
+        if (titleCoin) titleCoin.textContent = totalCoins;
+        if (typeof playSound === 'function') playSound('kick');
+        renderBrewGrid();
+      } else if (typeof playSound === 'function') {
+        playSound('hit');
+      }
+    };
+
+    btnRow.appendChild(putBtn);
+    btnRow.appendChild(buyBtn);
+    card.appendChild(btnRow);
+    matGrid.appendChild(card);
+  });
+  matPanel.appendChild(matGrid);
+  wrap.appendChild(matPanel);
+
+  const invPanel = document.createElement('div');
+  invPanel.className = 'brew-panel light';
+  invPanel.innerHTML = `
+    <div class="brew-head">
+      <div class="brew-title">所持ポーション（消耗品・バトル中に発動）</div>
+      <div class="brew-badge">${brewSave.potions.length}本</div>
+    </div>
+  `;
+
+  if (!brewSave.potions.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-size:11px;font-weight:800;color:#64748B;';
+    empty.textContent = '所持ポーションはありません。上の調合釜で作成してください。';
+    invPanel.appendChild(empty);
+  } else {
+    brewSave.potions.forEach(p => {
+      const isEq = brewSave.equippedUid === p.uid;
+      const row = document.createElement('div');
+      row.className = 'brew-pot-item' + (isEq ? ' equipped' : '');
+      row.innerHTML = `
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:900;">${p.name}</div>
+          <div style="font-size:10px;font-weight:800;color:#475569;">${p.desc}</div>
+        </div>
+      `;
+      const eqBtn = document.createElement('button');
+      eqBtn.className = 'jutsu-btn ' + (isEq ? 'on' : 'buy');
+      eqBtn.style.cssText = 'flex:0 0 68px;font-size:11px;padding:6px 4px;';
+      eqBtn.textContent = isEq ? '装備中' : '装備';
+      eqBtn.onclick = () => {
+        brewSave.equippedUid = isEq ? null : p.uid;
+        saveBrew();
+        if (typeof playSound === 'function') playSound('kick');
+        renderBrewGrid();
+      };
+      row.appendChild(eqBtn);
+      invPanel.appendChild(row);
+    });
+  }
+  wrap.appendChild(invPanel);
+  grid.appendChild(wrap);
+}
+
+// ショップタブ整理：「エンチャント購入」を削除し、「醸造」を追加
+(function () {
+  const oldEnchBuyTab = document.getElementById('shop-tab-ench');
+  if (oldEnchBuyTab) oldEnchBuyTab.remove();
+
+  const tabsWrap = document.querySelector('.shop-tabs');
+  if (tabsWrap) {
+    const brewTab = document.createElement('button');
+    brewTab.id = 'shop-tab-brew';
+    brewTab.className = 'shop-tab';
+    brewTab.textContent = '醸造';
+    brewTab.addEventListener('click', () => switchShopTab('brew'));
+    tabsWrap.appendChild(brewTab);
+
+    const prevSwitchShopTab15 = switchShopTab;
+    switchShopTab = function (tab) {
+      if (tab === 'ench') tab = 'enchApply';
+      prevSwitchShopTab15(tab);
+      brewTab.classList.toggle('active', tab === 'brew');
+    };
+
+    const prevRenderSkinGrid15 = renderSkinGrid;
+    renderSkinGrid = function () {
+      if (currentShopTab === 'brew') { renderBrewGrid(); return; }
+      prevRenderSkinGrid15();
+    };
+  }
+})();
+
+
+// ==========================================================================
+// 5. ホーム画面に「GACHA」ボタン＆専用ガチャ画面
+// ==========================================================================
+(function () {
+  const wrapper = document.getElementById('game-wrapper');
+  const titleScreen = document.getElementById('screen-title');
+  const btnGroup = titleScreen ? titleScreen.querySelector('.btn-group') : null;
+  if (!wrapper || !titleScreen || !btnGroup) return;
+
+  const gachaHubScreen = document.createElement('div');
+  gachaHubScreen.id = 'screen-gacha-hub';
+  gachaHubScreen.className = 'overlay hidden';
+  gachaHubScreen.innerHTML = `
+    <div class="title-badge" style="background:#FFD600;color:#1E1E24;">GACHA</div>
+    <h2 style="font-size:24px;font-weight:900;margin:0 0 6px 0;">ガチャ</h2>
+    <div style="display:flex;gap:8px;margin-bottom:10px;justify-content:center;flex-wrap:wrap;">
+      <div class="coin-banner">
+        <span class="coin-icon"></span>
+        <span>COIN:</span>
+        <span id="hub-coin-val" style="color:#D97706;font-size:14px;">0</span>
+      </div>
+      <div class="coin-banner">
+        <span>クリスタル:</span>
+        <span id="hub-crystal-val" style="color:#7C3AED;font-size:14px;">0</span>
+      </div>
+    </div>
+    <div id="gacha-hub-list" class="gacha-hub-list"></div>
+    <button id="gacha-hub-back" class="btn btn-back" style="width:100%;max-width:295px;">タイトルへ戻る</button>
+  `;
+  wrapper.appendChild(gachaHubScreen);
+
+  window.renderGachaHub = function () {
+    document.getElementById('hub-coin-val').textContent = totalCoins;
+    document.getElementById('hub-crystal-val').textContent = typeof enchSave !== 'undefined' ? enchSave.crystals : 0;
+    const titleCoin = document.getElementById('title-total-coins');
+    if (titleCoin) titleCoin.textContent = totalCoins;
+
+    const list = document.getElementById('gacha-hub-list');
+    list.innerHTML = '';
+
+    // 1. エンチャントガチャカード
+    if (typeof enchSave !== 'undefined' && typeof gachaOpen === 'function') {
+      const card1 = document.createElement('div');
+      card1.className = 'skin-card jutsu-card';
+      card1.style.cssText = 'background:#0F172A;color:#F8FAFC;border-color:#1E1E24;box-shadow:4px 4px 0 #1E1E24;cursor:default;';
+      card1.innerHTML = `
+        <div class="jutsu-head">
+          <div class="jutsu-icon">${BOOK_ICON}</div>
+          <div class="jutsu-info">
+            <div class="jutsu-name">エンチャントガチャ<span class="jutsu-sub" style="color:#FFD600;">書が出現</span></div>
+            <div class="jutsu-desc">ノーマル60% / レア28% / スーパーレア10% / 伝説2%（10連はレア以上1冊確定）。クリスタル1個 ${CRYSTAL_PRICE}枚。</div>
+          </div>
+        </div>
+      `;
+      const rowBuy = document.createElement('div');
+      rowBuy.className = 'jutsu-row';
+
+      const bBuy1 = document.createElement('button');
+      bBuy1.className = 'jutsu-btn ' + (totalCoins >= CRYSTAL_PRICE ? 'buy' : 'dim');
+      bBuy1.textContent = `結晶×1 (${CRYSTAL_PRICE}枚)`;
+      bBuy1.onclick = () => {
+        if (totalCoins >= CRYSTAL_PRICE) {
+          totalCoins -= CRYSTAL_PRICE;
+          enchSave.crystals += 1;
+          saveEnch();
+          saveCoinAndSkinData();
+          if (typeof gSfx === 'function') gSfx('flip', 1);
+          renderGachaHub();
+        } else if (typeof playSound === 'function') playSound('hit');
+      };
+
+      const bBuy5 = document.createElement('button');
+      bBuy5.className = 'jutsu-btn ' + (totalCoins >= CRYSTAL_PRICE * 5 ? 'buy' : 'dim');
+      bBuy5.textContent = `結晶×5 (${CRYSTAL_PRICE * 5}枚)`;
+      bBuy5.onclick = () => {
+        if (totalCoins >= CRYSTAL_PRICE * 5) {
+          totalCoins -= CRYSTAL_PRICE * 5;
+          enchSave.crystals += 5;
+          saveEnch();
+          saveCoinAndSkinData();
+          if (typeof gSfx === 'function') gSfx('flip', 1);
+          renderGachaHub();
+        } else if (typeof playSound === 'function') playSound('hit');
+      };
+
+      rowBuy.appendChild(bBuy1);
+      rowBuy.appendChild(bBuy5);
+      card1.appendChild(rowBuy);
+
+      const rowPull = document.createElement('div');
+      rowPull.className = 'jutsu-row';
+
+      const bPull1 = document.createElement('button');
+      bPull1.className = 'jutsu-btn ' + (enchSave.crystals >= GACHA_COST_1 ? 'on' : 'dim');
+      bPull1.textContent = `1回引く (結晶${GACHA_COST_1})`;
+      bPull1.onclick = () => { if (enchSave.crystals >= GACHA_COST_1) gachaOpen(1); else if (typeof playSound === 'function') playSound('hit'); };
+
+      const bPull10 = document.createElement('button');
+      bPull10.className = 'jutsu-btn ' + (enchSave.crystals >= GACHA_COST_10 ? 'on' : 'dim');
+      bPull10.textContent = `10連引く (結晶${GACHA_COST_10})`;
+      bPull10.onclick = () => { if (enchSave.crystals >= GACHA_COST_10) gachaOpen(10); else if (typeof playSound === 'function') playSound('hit'); };
+
+      rowPull.appendChild(bPull1);
+      rowPull.appendChild(bPull10);
+      card1.appendChild(rowPull);
+      list.appendChild(card1);
+    }
+
+    // 2. 忍具・秘宝ガチャカード（split16.py の openTreasureChestGacha を呼び出し）
+    const card2 = document.createElement('div');
+    card2.className = 'skin-card jutsu-card';
+    card2.style.cssText = 'background:#0F172A;color:#F8FAFC;border-color:#1E1E24;box-shadow:4px 4px 0 #1E1E24;cursor:default;';
+    card2.innerHTML = `
+      <div class="jutsu-head">
+        <div class="jutsu-icon">
+          <svg viewBox="0 0 48 48"><rect x="8" y="16" width="32" height="24" fill="#B45309" stroke="#1E1E24" stroke-width="2.5"/><rect x="6" y="12" width="36" height="8" fill="#D97706" stroke="#1E1E24" stroke-width="2.5"/><rect x="20" y="16" width="8" height="10" fill="#FFD600" stroke="#1E1E24" stroke-width="2"/></svg>
+        </div>
+        <div class="jutsu-info">
+          <div class="jutsu-name">忍具・秘宝ガチャ<span class="jutsu-sub" style="color:#38BDF8;">忍具＆秘宝</span></div>
+          <div class="jutsu-desc">既存の忍具（不死のトーテム等）と、醸造用の高レア秘宝（星屑の天球儀・紅蓮の古竜鱗など）が出現。10連はレア以上1つ確定。</div>
+        </div>
+      </div>
+    `;
+    const row2 = document.createElement('div');
+    row2.className = 'jutsu-row';
+
+    const tPull1 = document.createElement('button');
+    tPull1.className = 'jutsu-btn ' + (totalCoins >= 250 ? 'buy' : 'dim');
+    tPull1.textContent = '1回引く (250枚)';
+    tPull1.onclick = () => { if (typeof openTreasureChestGacha === 'function') openTreasureChestGacha(1); };
+
+    const tPull10 = document.createElement('button');
+    tPull10.className = 'jutsu-btn ' + (totalCoins >= 2200 ? 'on' : 'dim');
+    tPull10.textContent = '10連引く (2200枚)';
+    tPull10.onclick = () => { if (typeof openTreasureChestGacha === 'function') openTreasureChestGacha(10); };
+
+    row2.appendChild(tPull1);
+    row2.appendChild(tPull10);
+    card2.appendChild(row2);
+    list.appendChild(card2);
+  };
+
+  if (typeof gachaClose === 'function') {
+    const prevGachaClose15 = gachaClose;
+    gachaClose = function () {
+      prevGachaClose15();
+      if (!gachaHubScreen.classList.contains('hidden')) renderGachaHub();
+    };
+  }
+
+  window.openGachaHub = function () {
+    screenTitle.classList.add('hidden');
+    screenResult.classList.add('hidden');
+    screenSkin.classList.add('hidden');
+    gachaHubScreen.classList.remove('hidden');
+    renderGachaHub();
+  };
+
+  document.getElementById('gacha-hub-back').addEventListener('click', () => {
+    gachaHubScreen.classList.add('hidden');
+    backToTitle();
+  });
+
+  const gachaHomeBtn = document.createElement('button');
+  gachaHomeBtn.className = 'btn btn-gacha-home';
+  gachaHomeBtn.innerHTML = '<span>GACHA</span><span class="stage-tag">エンチャント / 忍具・秘宝</span>';
+  gachaHomeBtn.onclick = openGachaHub;
+  btnGroup.appendChild(gachaHomeBtn);
+})();
+
+
+// ==========================================================================
+// 6. バトルUI制御（ホーム画面では回転攻撃・ポーションボタンを完全非表示）
+// ==========================================================================
+(function () {
+  const wrapper = document.getElementById('game-wrapper');
+  if (!wrapper) return;
+
+  const spinBtn = document.createElement('button');
+  spinBtn.id = 'touch-spin-btn';
+  spinBtn.textContent = '回転攻撃';
+  wrapper.appendChild(spinBtn);
+
+  function isActualBattle() {
+    if (gameState !== 'playing') return false;
+    const overlays = ['screen-title', 'screen-practice', 'screen-skin', 'screen-story', 'screen-result', 'screen-gacha-hub', 'tutorial-screen'];
+    return overlays.every(id => {
+      const el = document.getElementById(id);
+      return !el || el.classList.contains('hidden');
+    });
+  }
+
+  function syncBattleHudButtons() {
+    const playing = isActualBattle();
+    if (!playing) {
+      spinBtn.style.display = 'none';
+      if (battlePotionBtn) battlePotionBtn.style.display = 'none';
+      return;
+    }
+
+    spinBtn.style.display = 'flex';
+    spinBtn.classList.toggle('cooldown', player.lockoutTimer > 0);
+
+    if (battlePotionBtn) {
+      if (activePotionBuff) {
+        battlePotionBtn.style.display = 'block';
+        battlePotionBtn.classList.add('active-buff');
+        if (activePotionBuff.shield > 0) {
+          battlePotionBtn.textContent = `聖薬バリア ×${activePotionBuff.shield}`;
+        } else {
+          const sec = Math.max(1, Math.ceil(activePotionBuff.frames / 60));
+          battlePotionBtn.textContent = `霊薬効果中 (${sec}s)`;
+        }
+      } else {
+        const pot = getEquippedPotion();
+        if (pot) {
+          battlePotionBtn.style.display = 'block';
+          battlePotionBtn.classList.remove('active-buff');
+          battlePotionBtn.textContent = `使う: ${pot.short} [C]`;
+        } else {
+          battlePotionBtn.style.display = 'none';
+        }
+      }
+    }
+  }
+
+  const triggerSpin = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isActualBattle() && typeof performSpinAttack === 'function') {
+      performSpinAttack();
+    }
+  };
+
+  spinBtn.addEventListener('pointerdown', triggerSpin);
+
+  const cvs = document.getElementById('game-canvas') || wrapper.querySelector('canvas');
+  if (cvs) {
+    cvs.addEventListener('contextmenu', (e) => {
+      if (isActualBattle()) triggerSpin(e);
+    });
+    let lastTapTime = 0;
+    cvs.addEventListener('pointerdown', (e) => {
+      if (!isActualBattle()) return;
+      if (e.button === 2) {
+        triggerSpin(e);
+        return;
+      }
+      const now = performance.now();
+      if (now - lastTapTime < 220) {
+        triggerSpin(e);
+        lastTapTime = 0;
+      } else {
+        lastTapTime = now;
+      }
+    });
+  }
+
+  const prevBackToTitle15 = backToTitle;
+  backToTitle = function () {
+    prevBackToTitle15();
+    syncBattleHudButtons();
+  };
+
+  const prevUpdateBtn15 = update;
+  update = function () {
+    prevUpdateBtn15();
+    syncBattleHudButtons();
+  };
+
+  syncBattleHudButtons();
+})();
+
+
+/* SPLIT16 */
+// ==========================================
+// 1. 醸造素材・ポーションの高精細化＆絶大効果
+// ==========================================
+(function () {
+  if (typeof BREW_MATERIALS !== 'undefined') {
+    const HIGH_MATS = {
+      herb: {
+        svg: '<svg viewBox="0 0 48 48"><defs><linearGradient id="gHerb" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#BBF7D0"/><stop offset="50%" stop-color="#22C55E"/><stop offset="100%" stop-color="#14532D"/></linearGradient></defs><path d="M24 42V13" stroke="#15803D" stroke-width="3.5" stroke-linecap="round"/><path d="M24 32C12 32 8 20 11 13C18 13 24 20 24 32Z" fill="url(#gHerb)" stroke="#1E1E24" stroke-width="2"/><path d="M24 25C36 25 40 13 37 6C30 6 24 13 24 25Z" fill="url(#gHerb)" stroke="#1E1E24" stroke-width="2"/><path d="M24 16C18 9 20 4 24 3C28 4 30 9 24 16Z" fill="#86EFAC" stroke="#1E1E24" stroke-width="2"/><circle cx="17" cy="19" r="1.8" fill="#FFFFFF" opacity="0.8"/><circle cx="31" cy="13" r="1.8" fill="#FFFFFF" opacity="0.8"/></svg>'
+      },
+      dew: {
+        svg: '<svg viewBox="0 0 48 48"><defs><radialGradient id="gDew" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="35%" stop-color="#7DD3FC"/><stop offset="80%" stop-color="#0284C7"/><stop offset="100%" stop-color="#0C4A6E"/></radialGradient></defs><path d="M24 5C24 5 9 22 9 31.5C9 39.5 15.7 45 24 45C32.3 45 39 39.5 39 31.5C39 22 24 5 24 5Z" fill="url(#gDew)" stroke="#1E1E24" stroke-width="2.4"/><ellipse cx="18" cy="26" rx="3" ry="6" transform="rotate(-20 18 26)" fill="#FFFFFF" opacity="0.85"/><circle cx="29" cy="36" r="2.2" fill="#BAE6FD" opacity="0.7"/></svg>'
+      },
+      shroom: {
+        svg: '<svg viewBox="0 0 48 48"><defs><radialGradient id="gShroom" cx="40%" cy="25%" r="75%"><stop offset="0%" stop-color="#F3E8FF"/><stop offset="45%" stop-color="#9333EA"/><stop offset="100%" stop-color="#3B0764"/></radialGradient></defs><path d="M18 25H30L32 42H16L18 25Z" fill="#F1F5F9" stroke="#1E1E24" stroke-width="2.2"/><path d="M6 27C6 13 14 6 24 6C34 6 42 13 42 27C32 29 16 29 6 27Z" fill="url(#gShroom)" stroke="#1E1E24" stroke-width="2.4"/><circle cx="16" cy="17" r="3.4" fill="#FEF08A"/><circle cx="30" cy="15" r="3" fill="#FEF08A"/><circle cx="24" cy="22" r="2.4" fill="#DDD6FE"/><circle cx="12" cy="23" r="1.8" fill="#DDD6FE"/></svg>'
+      },
+      ember: {
+        svg: '<svg viewBox="0 0 48 48"><defs><linearGradient id="gEmber" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#991B1B"/><stop offset="45%" stop-color="#F97316"/><stop offset="100%" stop-color="#FEF08A"/></linearGradient></defs><path d="M11 38C9 25 22 22 20 8C29 11 35 20 31 31C36 27 39 20 37 13C44 22 40 41 22 43C15 43 12 41 11 38Z" fill="url(#gEmber)" stroke="#1E1E24" stroke-width="2.2"/><path d="M18 38C17 30 24 27 24 19C29 23 31 31 24 38Z" fill="#FEF9C3"/></svg>'
+      },
+      scale: {
+        svg: '<svg viewBox="0 0 48 48"><defs><linearGradient id="gScale" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FECDD3"/><stop offset="40%" stop-color="#E11D48"/><stop offset="100%" stop-color="#4C0519"/></linearGradient></defs><polygon points="24,3 41,15 37,36 24,45 11,36 7,15" fill="url(#gScale)" stroke="#1E1E24" stroke-width="2.4"/><polygon points="24,9 34,17 31,32 24,39 17,32 14,17" fill="#FB7185" opacity="0.65"/><polygon points="24,3 30,17 24,25 18,17" fill="#FFE4E6" opacity="0.75"/><line x1="24" y1="3" x2="24" y2="45" stroke="#1E1E24" stroke-width="1.6"/></svg>'
+      },
+      stardust: {
+        svg: '<svg viewBox="0 0 48 48"><defs><radialGradient id="gStar" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="45%" stop-color="#FACC15"/><stop offset="100%" stop-color="#B45309"/></radialGradient></defs><polygon points="24,2 29,16 45,16 32,26 37,42 24,32 11,42 16,26 3,16 19,16" fill="url(#gStar)" stroke="#1E1E24" stroke-width="2.2"/><polygon points="24,9 27,18 37,18 29,24 32,34 24,28 16,34 19,24 11,18 21,18" fill="#FEF9C3"/><circle cx="24" cy="22" r="4" fill="#FFFFFF"/></svg>'
+      }
+    };
+    BREW_MATERIALS.forEach(m => {
+      if (HIGH_MATS[m.id]) m.svg = HIGH_MATS[m.id].svg;
+    });
+  }
+
+  if (typeof POTION_TYPES !== 'undefined') {
+    const OP_POTIONS = {
+      swift_brew: {
+        desc: (lv) => `[絶大] 発動時超高速上昇(無敵)＋${12 + lv * 3}秒間 回転待機ゼロ連打＆超加速`
+      },
+      gold_brew: {
+        desc: (lv) => `[絶大] 即コイン+${lv * 50}枚＋${14 + lv * 3}秒間 コイン${3 + lv}倍＆全画面自動吸引`
+      },
+      slayer_brew: {
+        desc: (lv) => `[絶大] 発動時画面内の敵全滅＋${14 + lv * 3}秒間 常時回転無敵刃＆ボス反射2倍`
+      },
+      guardian_brew: {
+        desc: (lv) => `[絶大] ${lv + 2}回の黄金聖壁展開（被弾時に敵弾全消去＋超反撃ジャンプ）`
+      }
+    };
+    POTION_TYPES.forEach(p => {
+      if (OP_POTIONS[p.id]) p.desc = OP_POTIONS[p.id].desc;
+    });
+  }
+
+  window.useBattlePotion = function () {
+    if (gameState !== 'playing') return;
+    const pot = getEquippedPotion();
+    if (!pot) return;
+
+    const idx = brewSave.potions.findIndex(p => p.uid === pot.uid);
+    if (idx !== -1) brewSave.potions.splice(idx, 1);
+    const nextSame = brewSave.potions.find(p => p.typeId === pot.typeId) || brewSave.potions[0] || null;
+    brewSave.equippedUid = nextSame ? nextSame.uid : null;
+    saveBrew();
+
+    const lv = pot.lv;
+    shakeTime = 14;
+
+    if (pot.typeId === 'swift_brew') {
+      player.lockoutTimer = 0;
+      player.vy = -21 - lv * 1.5;
+      player.spinTimer = Math.max(player.spinTimer, 45);
+      activePotionBuff = { typeId: 'swift_brew', lv, frames: (12 + lv * 3) * 60, shield: 0 };
+    } else if (pot.typeId === 'gold_brew') {
+      stageCoins += lv * 50;
+      activePotionBuff = { typeId: 'gold_brew', lv, frames: (14 + lv * 3) * 60, shield: 0 };
+    } else if (pot.typeId === 'slayer_brew') {
+      if (typeof bats !== 'undefined') bats.length = 0;
+      if (typeof birds !== 'undefined') birds.length = 0;
+      if (typeof ambusherEnemies !== 'undefined') ambusherEnemies.length = 0;
+      if (typeof projectiles !== 'undefined') projectiles.length = 0;
+      if (typeof bossLasers !== 'undefined') bossLasers.length = 0;
+      player.spinTimer = 60;
+      activePotionBuff = { typeId: 'slayer_brew', lv, frames: (14 + lv * 3) * 60, shield: 0 };
+    } else if (pot.typeId === 'guardian_brew') {
+      activePotionBuff = { typeId: 'guardian_brew', lv, frames: 999999, shield: lv + 2 };
+    }
+
+    if (typeof playSound === 'function') playSound('clear');
+    if (typeof spawnParticles === 'function') {
+      spawnParticles(player.x + player.size / 2, player.y + player.size / 2, pot.col, 42, false);
+    }
+  };
+
+  const prevUpdate16 = update;
+  update = function () {
+    const coinsBefore = stageCoins;
+    prevUpdate16();
+    if (gameState !== 'playing' || !activePotionBuff) return;
+
+    const lv = activePotionBuff.lv;
+    const pCx = player.x + player.size / 2;
+    const pCy = player.y + player.size / 2;
+
+    if (activePotionBuff.typeId === 'swift_brew') {
+      player.lockoutTimer = 0;
+      if (player.vy < 0) player.vy -= 0.14;
+      if (Math.random() < 0.45 && typeof spawnParticles === 'function') {
+        spawnParticles(pCx, pCy, '#38BDF8', 2, false);
+      }
+    } else if (activePotionBuff.typeId === 'gold_brew') {
+      if (stageCoins > coinsBefore) {
+        const diff = stageCoins - coinsBefore;
+        stageCoins += diff * (1 + lv);
+      }
+      if (typeof coins !== 'undefined') {
+        for (let i = 0; i < coins.length; i++) {
+          const c = coins[i];
+          if (c.collected) continue;
+          const dx = pCx - c.x;
+          const dy = pCy - c.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 460 && dist > 1) {
+            c.x += (dx / dist) * 14;
+            c.y += (dy / dist) * 14;
+          }
+        }
+      }
+      if (Math.random() < 0.35 && typeof spawnParticles === 'function') {
+        spawnParticles(pCx, pCy, '#FACC15', 2, false);
+      }
+    } else if (activePotionBuff.typeId === 'slayer_brew') {
+      player.spinTimer = Math.max(player.spinTimer, 18);
+      player.lockoutTimer = 0;
+      if (Math.random() < 0.4 && typeof spawnParticles === 'function') {
+        spawnParticles(pCx, pCy, '#F43F5E', 2, false);
+      }
+    }
+  };
+
+  const prevShowResult16 = showResult;
+  showResult = function (isClear) {
+    if (!isClear && gameState === 'playing' && activePotionBuff && activePotionBuff.shield > 0) {
+      activePotionBuff.shield--;
+      if (activePotionBuff.shield <= 0) activePotionBuff = null;
+      player.vy = -18;
+      player.spinTimer = 45;
+      shakeTime = 16;
+      if (typeof bats !== 'undefined') bats.length = 0;
+      if (typeof birds !== 'undefined') birds.length = 0;
+      if (typeof projectiles !== 'undefined') projectiles.length = 0;
+      if (typeof bossLasers !== 'undefined') bossLasers.length = 0;
+      if (typeof playSound === 'function') playSound('clash');
+      if (typeof spawnParticles === 'function') {
+        spawnParticles(player.x + player.size / 2, player.y + player.size / 2, '#34D399', 45, false);
+      }
+      return;
+    }
+    prevShowResult16(isClear);
+  };
+
+  if (typeof draw === 'function') {
+    const prevDraw16 = draw;
+    draw = function () {
+      prevDraw16();
+      if (gameState !== 'playing' || !activePotionBuff) return;
+      const pCx = player.x + player.size / 2;
+      const pCy = player.y + player.size / 2 - cameraY;
+      const colMap = {
+        swift_brew: '#38BDF8',
+        gold_brew: '#FACC15',
+        slayer_brew: '#F43F5E',
+        guardian_brew: '#34D399'
+      };
+      const col = colMap[activePotionBuff.typeId] || '#FFD600';
+      const pulse = 26 + Math.sin(performance.now() * 0.015) * 5;
+
+      ctx.save();
+      ctx.translate(pCx, pCy);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(0, 0, pulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (activePotionBuff.shield > 0) {
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.arc(0, 0, pulse + 7, performance.now() * 0.004, performance.now() * 0.004 + Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+  }
+})();
+
+
+// ==========================================
+// 2. 更衣室（CURRENT EQUIP クリックで開く）＋ 工房 ＋ 称号
+// ==========================================
+(function () {
+  const wrapper = document.getElementById('game-wrapper');
+  const titleEquipTag = document.getElementById('title-equip-tag');
+  if (!wrapper || !titleEquipTag) return;
+
+  const TITLE_IDEAS = [
+    { id: 'none', name: '称号なし', cond: '初期状態', buff: 'なし' },
+    { id: 'rookie', name: '雲上の駆け出し', cond: 'Record 100m到達（案）', buff: 'ジャンプ力微増（案）' },
+    { id: 'sky_lord', name: '天空の覇者', cond: 'Record 300m到達（案）', buff: '獲得コイン+5%（案）' },
+    { id: 'sword_saint', name: '一閃の剣豪', cond: '回転攻撃で累計100体撃破（案）', buff: '回転時間延長（案）' },
+    { id: 'alchemist', name: '見習い錬金術師', cond: 'ポーション累計5回醸造（案）', buff: '素材ドロップ率UP（案）' },
+    { id: 'relic_hunter', name: '秘宝コレクター', cond: '秘宝ガチャ累計20回（案）', buff: 'レア出現率UP（案）' }
+  ];
+
+  let equippedTitleId = 'none';
+  try {
+    equippedTitleId = localStorage.getItem('wallKickTitleDraft') || 'none';
+  } catch (e) {}
+
+  function getEquippedTitleObj() {
+    return TITLE_IDEAS.find(t => t.id === equippedTitleId) || TITLE_IDEAS[0];
+  }
+
+  if (typeof updateTitleEquipTag === 'function') {
+    const prevUpdateTitleEquipTag = updateTitleEquipTag;
+    updateTitleEquipTag = function () {
+      prevUpdateTitleEquipTag();
+      const tObj = getEquippedTitleObj();
+      const baseTxt = titleEquipTag.textContent.replace(/\s*\[更衣室 ▶\]$/, '');
+      const titlePart = tObj.id !== 'none' ? `【${tObj.name}】 ` : '';
+      titleEquipTag.textContent = `${titlePart}${baseTxt} [更衣室 ▶]`;
+    };
+    updateTitleEquipTag();
+  }
+
+  const wdScreen = document.createElement('div');
+  wdScreen.id = 'screen-wardrobe';
+  wdScreen.className = 'overlay hidden';
+  wdScreen.innerHTML = `
+    <div class="title-badge" style="background:#38BDF8;color:#0F172A;">LOCKER & WORKSHOP</div>
+    <h2 style="font-size:22px;font-weight:900;margin:0 0 6px 0;">更衣室・工房</h2>
+    <div id="wd-summary" class="wd-summary-box"></div>
+    <div class="wd-tabs">
+      <button id="wd-tab-equip" class="wd-tab active">装備変更</button>
+      <button id="wd-tab-workshop" class="wd-tab">工房（強化・醸造）</button>
+      <button id="wd-tab-titles" class="wd-tab">称号（案）</button>
+    </div>
+    <div id="wd-subtabs" class="wd-subtabs hidden">
+      <button id="wd-sub-ench" class="wd-subtab active">エンチャント付与</button>
+      <button id="wd-sub-brew" class="wd-subtab">ポーション醸造</button>
+    </div>
+    <div id="wd-body" class="wd-body"></div>
+    <button id="wd-back-btn" class="btn btn-back" style="width:100%;max-width:340px;">タイトルへ戻る</button>
+  `;
+  wrapper.appendChild(wdScreen);
+
+  let wdTab = 'equip';
+  let wdWorkshopSub = 'ench';
+
+  function updateWdSummary() {
+    const sumEl = document.getElementById('wd-summary');
+    if (!sumEl) return;
+    const sk = typeof SKINS !== 'undefined' ? SKINS.find(s => s.id === equippedSkin) : null;
+    const sw = typeof SWORDS !== 'undefined' ? SWORDS.find(s => s.id === equippedSword) : null;
+    const tl = (typeof NINJA_TOOLS !== 'undefined' && typeof toolSave !== 'undefined' && toolSave.equipped)
+      ? NINJA_TOOLS.find(t => t.id === toolSave.equipped) : null;
+    const pot = typeof getEquippedPotion === 'function' ? getEquippedPotion() : null;
+    const tit = getEquippedTitleObj();
+
+    sumEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:#FFD600;">CURRENT EQUIP</span>
+        <span class="wd-title-badge">${tit.name}</span>
+      </div>
+      <div class="wd-summary-grid">
+        <div>衣装: <span style="color:#38BDF8;">${sk ? sk.name : '忍者'}</span></div>
+        <div>武器: <span style="color:#FB7185;">${sw ? sw.name : '木刀'}</span></div>
+        <div>忍具: <span style="color:#FACC15;">${tl ? tl.name : 'なし'}</span></div>
+        <div>霊薬: <span style="color:#4ADE80;">${pot ? pot.short : 'なし'}</span></div>
+      </div>
+    `;
+  }
+
+  function renderWdEquip() {
+    const body = document.getElementById('wd-body');
+    body.innerHTML = '';
+
+    if (typeof SKINS !== 'undefined' && typeof unlockedSkins !== 'undefined') {
+      const sec = document.createElement('div');
+      sec.className = 'wd-sec';
+      sec.innerHTML = '<div class="wd-sec-title"><span>衣装（スキン）</span><span style="font-size:10px;color:#64748B;">所持のみ表示</span></div>';
+      const grid = document.createElement('div');
+      grid.className = 'wd-chip-grid';
+      SKINS.filter(s => unlockedSkins.includes(s.id)).forEach(s => {
+        const isEq = equippedSkin === s.id;
+        const btn = document.createElement('div');
+        btn.className = 'wd-chip' + (isEq ? ' eq' : '');
+        btn.innerHTML = `<span>${s.name}</span><span style="font-size:9px;color:#475569;">${isEq ? '装備中' : 'タップで装備'}</span>`;
+        btn.onclick = () => {
+          equippedSkin = s.id;
+          if (typeof saveCoinAndSkinData === 'function') saveCoinAndSkinData();
+          if (typeof updateTitleEquipTag === 'function') updateTitleEquipTag();
+          if (typeof playSound === 'function') playSound('kick');
+          renderWardrobe();
+        };
+        grid.appendChild(btn);
+      });
+      sec.appendChild(grid);
+      body.appendChild(sec);
+    }
+
+    if (typeof SWORDS !== 'undefined' && typeof unlockedSwords !== 'undefined') {
+      const sec = document.createElement('div');
+      sec.className = 'wd-sec';
+      sec.innerHTML = '<div class="wd-sec-title"><span>武器（刀）</span><span style="font-size:10px;color:#64748B;">所持のみ表示</span></div>';
+      const grid = document.createElement('div');
+      grid.className = 'wd-chip-grid';
+      SWORDS.filter(s => unlockedSwords.includes(s.id)).forEach(s => {
+        const isEq = equippedSword === s.id;
+        const btn = document.createElement('div');
+        btn.className = 'wd-chip' + (isEq ? ' eq' : '');
+        btn.innerHTML = `<span>${s.name}</span><span style="font-size:9px;color:#475569;">${isEq ? '装備中' : 'タップで装備'}</span>`;
+        btn.onclick = () => {
+          equippedSword = s.id;
+          if (typeof saveCoinAndSkinData === 'function') saveCoinAndSkinData();
+          if (typeof updateTitleEquipTag === 'function') updateTitleEquipTag();
+          if (typeof playSound === 'function') playSound('kick');
+          renderWardrobe();
+        };
+        grid.appendChild(btn);
+      });
+      sec.appendChild(grid);
+      body.appendChild(sec);
+    }
+
+    if (typeof NINJA_TOOLS !== 'undefined' && typeof toolSave !== 'undefined') {
+      const sec = document.createElement('div');
+      sec.className = 'wd-sec';
+      sec.innerHTML = '<div class="wd-sec-title"><span>忍具</span><span style="font-size:10px;color:#64748B;">所持アイテム</span></div>';
+      const grid = document.createElement('div');
+      grid.className = 'wd-chip-grid';
+      NINJA_TOOLS.forEach(t => {
+        const cnt = toolSave.owned[t.id] || 0;
+        const isEq = toolSave.equipped === t.id;
+        const btn = document.createElement('div');
+        btn.className = 'wd-chip' + (isEq ? ' eq' : '');
+        btn.style.opacity = cnt > 0 ? '1' : '0.45';
+        btn.innerHTML = `<span>${t.name} (×${cnt})</span><span style="font-size:9px;color:#475569;">${isEq ? '装備中' : (cnt > 0 ? 'タップで装備' : '未所持')}</span>`;
+        btn.onclick = () => {
+          if (cnt <= 0) return;
+          toolSave.equipped = isEq ? null : t.id;
+          if (typeof saveTools === 'function') saveTools();
+          if (typeof playSound === 'function') playSound('kick');
+          renderWardrobe();
+        };
+        grid.appendChild(btn);
+      });
+      sec.appendChild(grid);
+      body.appendChild(sec);
+    }
+
+    if (typeof brewSave !== 'undefined') {
+      const sec = document.createElement('div');
+      sec.className = 'wd-sec';
+      sec.innerHTML = '<div class="wd-sec-title"><span>ポーション（バトル中消費）</span><span style="font-size:10px;color:#64748B;">工房で醸造</span></div>';
+      if (!brewSave.potions.length) {
+        const emp = document.createElement('div');
+        emp.style.cssText = 'font-size:11px;color:#64748B;font-weight:800;';
+        emp.textContent = '所持ポーションがありません。「工房」タブで醸造できます。';
+        sec.appendChild(emp);
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'wd-chip-grid';
+        brewSave.potions.forEach(p => {
+          const isEq = brewSave.equippedUid === p.uid;
+          const btn = document.createElement('div');
+          btn.className = 'wd-chip' + (isEq ? ' eq' : '');
+          btn.innerHTML = `<span>${p.short}</span><span style="font-size:9px;color:#475569;">${isEq ? '装備中' : 'タップで装備'}</span>`;
+          btn.onclick = () => {
+            brewSave.equippedUid = isEq ? null : p.uid;
+            saveBrew();
+            if (typeof playSound === 'function') playSound('kick');
+            renderWardrobe();
+          };
+          grid.appendChild(btn);
+        });
+        sec.appendChild(grid);
+      }
+      body.appendChild(sec);
+    }
+  }
+
+  function renderWdWorkshop() {
+    const body = document.getElementById('wd-body');
+    body.innerHTML = '';
+
+    const skinGridEl = document.getElementById('skin-grid');
+    if (!skinGridEl) return;
+
+    const prevTab = typeof currentShopTab !== 'undefined' ? currentShopTab : 'skin';
+    if (wdWorkshopSub === 'ench' && typeof renderEnchApplyGrid === 'function') {
+      renderEnchApplyGrid();
+    } else if (wdWorkshopSub === 'brew' && typeof renderBrewGrid === 'function') {
+      renderBrewGrid();
+    }
+
+    while (skinGridEl.firstChild) {
+      body.appendChild(skinGridEl.firstChild);
+    }
+    if (typeof currentShopTab !== 'undefined') currentShopTab = prevTab;
+  }
+
+  function renderWdTitles() {
+    const body = document.getElementById('wd-body');
+    body.innerHTML = '';
+
+    const sec = document.createElement('div');
+    sec.className = 'wd-sec';
+    sec.innerHTML = `
+      <div class="wd-sec-title">
+        <span>称号システム（アイデア案・お試し装着）</span>
+      </div>
+      <div style="font-size:10px;color:#475569;font-weight:800;margin-bottom:6px;">
+        ※現在はデザイン・装着テスト用の仮実装です。タップするとホーム画面の装備欄に称号が表示されます。
+      </div>
+    `;
+
+    TITLE_IDEAS.forEach(t => {
+      const isEq = equippedTitleId === t.id;
+      const row = document.createElement('div');
+      row.className = 'wd-chip' + (isEq ? ' eq' : '');
+      row.style.marginBottom = '6px';
+      row.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;">【${t.name}】</span>
+          <span style="font-size:10px;color:${isEq ? '#15803D' : '#64748B'};">${isEq ? '装着中' : 'タップで仮装着'}</span>
+        </div>
+        <div style="font-size:10px;color:#334155;">条件案: ${t.cond}</div>
+        <div style="font-size:10px;color:#7C3AED;">効果案: ${t.buff}</div>
+      `;
+      row.onclick = () => {
+        equippedTitleId = t.id;
+        try { localStorage.setItem('wallKickTitleDraft', equippedTitleId); } catch (e) {}
+        if (typeof updateTitleEquipTag === 'function') updateTitleEquipTag();
+        if (typeof playSound === 'function') playSound('kick');
+        renderWardrobe();
+      };
+      sec.appendChild(row);
+    });
+
+    body.appendChild(sec);
+  }
+
+  window.renderWardrobe = function () {
+    updateWdSummary();
+    document.getElementById('wd-tab-equip').classList.toggle('active', wdTab === 'equip');
+    document.getElementById('wd-tab-workshop').classList.toggle('active', wdTab === 'workshop');
+    document.getElementById('wd-tab-titles').classList.toggle('active', wdTab === 'titles');
+
+    const subWrap = document.getElementById('wd-subtabs');
+    subWrap.classList.toggle('hidden', wdTab !== 'workshop');
+    document.getElementById('wd-sub-ench').classList.toggle('active', wdWorkshopSub === 'ench');
+    document.getElementById('wd-sub-brew').classList.toggle('active', wdWorkshopSub === 'brew');
+
+    if (wdTab === 'equip') renderWdEquip();
+    else if (wdTab === 'workshop') renderWdWorkshop();
+    else renderWdTitles();
+  };
+
+  if (typeof renderEnchApplyGrid === 'function') {
+    const origRenderEnchApply = renderEnchApplyGrid;
+    renderEnchApplyGrid = function () {
+      origRenderEnchApply();
+      if (!wdScreen.classList.contains('hidden') && wdTab === 'workshop' && wdWorkshopSub === 'ench') {
+        const skinGridEl = document.getElementById('skin-grid');
+        const body = document.getElementById('wd-body');
+        if (skinGridEl && body && skinGridEl.firstChild) {
+          body.innerHTML = '';
+          while (skinGridEl.firstChild) body.appendChild(skinGridEl.firstChild);
+        }
+      }
+    };
+  }
+  if (typeof renderBrewGrid === 'function') {
+    const origRenderBrew = renderBrewGrid;
+    renderBrewGrid = function () {
+      origRenderBrew();
+      if (!wdScreen.classList.contains('hidden') && wdTab === 'workshop' && wdWorkshopSub === 'brew') {
+        const skinGridEl = document.getElementById('skin-grid');
+        const body = document.getElementById('wd-body');
+        if (skinGridEl && body && skinGridEl.firstChild) {
+          body.innerHTML = '';
+          while (skinGridEl.firstChild) body.appendChild(skinGridEl.firstChild);
+          updateWdSummary();
+        }
+      }
+    };
+  }
+
+  window.openWardrobe = function () {
+    screenTitle.classList.add('hidden');
+    wdScreen.classList.remove('hidden');
+    if (typeof playSound === 'function') playSound('kick');
+    renderWardrobe();
+  };
+
+  titleEquipTag.addEventListener('click', openWardrobe);
+
+  document.getElementById('wd-tab-equip').addEventListener('click', () => { wdTab = 'equip'; renderWardrobe(); });
+  document.getElementById('wd-tab-workshop').addEventListener('click', () => { wdTab = 'workshop'; renderWardrobe(); });
+  document.getElementById('wd-tab-titles').addEventListener('click', () => { wdTab = 'titles'; renderWardrobe(); });
+  document.getElementById('wd-sub-ench').addEventListener('click', () => { wdWorkshopSub = 'ench'; renderWardrobe(); });
+  document.getElementById('wd-sub-brew').addEventListener('click', () => { wdWorkshopSub = 'brew'; renderWardrobe(); });
+
+  document.getElementById('wd-back-btn').addEventListener('click', () => {
+    wdScreen.classList.add('hidden');
+    backToTitle();
+  });
+})();
+
+
+// ==========================================
+// 3. 忍具・秘宝ガチャ 独立演出＆高グラフィック描画
+// ==========================================
+(function () {
+  const wrapper = document.getElementById('game-wrapper');
+  if (!wrapper) return;
+
+  const oldScreen = document.getElementById('treasure-gacha-screen');
+  if (oldScreen) oldScreen.remove();
+
+  const tScreen = document.createElement('div');
+  tScreen.id = 'treasure-gacha-screen';
+  tScreen.innerHTML =
+    '<canvas id="treasure-gacha-canvas" width="420" height="720"></canvas>' +
+    '<button id="treasure-gacha-skip" class="btn btn-back">スキップ</button>' +
+    '<button id="treasure-gacha-ok" class="btn btn-story">OK</button>';
+  wrapper.appendChild(tScreen);
+
+  const tCanvas = document.getElementById('treasure-gacha-canvas');
+  const tc = tCanvas.getContext('2d');
+  const skipBtn = document.getElementById('treasure-gacha-skip');
+  const okBtn = document.getElementById('treasure-gacha-ok');
+
+  const TREASURE_POOL = [
+    { r: 0, kind: 'mat', id: 'herb_set', name: '薬草・朝露セット', sub: '醸造素材 ×3', col: '#4ADE80',
+      desc: '薬草3個と朝露の水3個の詰め合わせ。基本の調合に使用。',
+      grant: () => { brewSave.mats.herb = (brewSave.mats.herb || 0) + 3; brewSave.mats.dew = (brewSave.mats.dew || 0) + 3; } },
+    { r: 0, kind: 'mat', id: 'shroom_pack', name: '夜光茸の群生', sub: '希少素材 ×2', col: '#A78BFA',
+      desc: '暗所で淡く発光する夜光茸2個。黄金招来の秘薬の材料。',
+      grant: () => { brewSave.mats.shroom = (brewSave.mats.shroom || 0) + 2; } },
+    { r: 0, kind: 'mat', id: 'ember_pack', name: '火蜥蜴の尾', sub: '希少素材 ×2', col: '#FB923C',
+      desc: '熱を帯びた火蜥蜴の尾2個。鬼神剛力の霊薬の材料。',
+      grant: () => { brewSave.mats.ember = (brewSave.mats.ember || 0) + 2; } },
+    { r: 1, kind: 'tool', id: 'totem', name: '不死のトーテム', sub: '忍具 ×1', col: '#FACC15',
+      desc: '既存の忍具。力尽きた瞬間に自動で身代わりとなり復活する。',
+      grant: () => { if (typeof toolSave !== 'undefined') { toolSave.owned.totem = (toolSave.owned.totem || 0) + 1; if (typeof saveTools === 'function') saveTools(); } } },
+    { r: 1, kind: 'tool', id: 'flash', name: '閃光玉', sub: '忍具 ×2', col: '#FEF08A',
+      desc: '既存の忍具。Zキー使用で画面内の敵を一掃する閃光弾。',
+      grant: () => { if (typeof toolSave !== 'undefined') { toolSave.owned.flash = (toolSave.owned.flash || 0) + 2; if (typeof saveTools === 'function') saveTools(); } } },
+    { r: 1, kind: 'tool', id: 'charm', name: '跳躍符', sub: '忍具 ×2', col: '#FB7185',
+      desc: '既存の忍具。Zキー使用で空中からもう一度大跳躍できる霊符。',
+      grant: () => { if (typeof toolSave !== 'undefined') { toolSave.owned.charm = (toolSave.owned.charm || 0) + 2; if (typeof saveTools === 'function') saveTools(); } } },
+    { r: 1, kind: 'tool', id: 'magnet', name: '招福の磁石', sub: '忍具 ×2', col: '#60A5FA',
+      desc: '既存の忍具。Zキー使用で10秒間周囲のコインを引き寄せる。',
+      grant: () => { if (typeof toolSave !== 'undefined') { toolSave.owned.magnet = (toolSave.owned.magnet || 0) + 2; if (typeof saveTools === 'function') saveTools(); } } },
+    { r: 2, kind: 'relic', id: 'dragon_scale', name: '紅蓮の古竜鱗', sub: '秘宝・SR素材 ×2', col: '#F43F5E',
+      desc: '太古の火竜から剥がれ落ちた硬鱗2枚。高レベル霊薬の核となる秘宝。',
+      grant: () => { brewSave.mats.scale = (brewSave.mats.scale || 0) + 2; } },
+    { r: 2, kind: 'relic', id: 'royal_scroll', name: '天啓の黄金巻物', sub: '秘宝・結晶＆鱗', col: '#C084FC',
+      desc: '古代忍びの奥義が記された秘宝巻物。クリスタル5個と古竜の鱗1枚を獲得。',
+      grant: () => {
+        if (typeof enchSave !== 'undefined') { enchSave.crystals = (enchSave.crystals || 0) + 5; if (typeof saveEnch === 'function') saveEnch(); }
+        brewSave.mats.scale = (brewSave.mats.scale || 0) + 1;
+      } },
+    { r: 3, kind: 'relic', id: 'astral_core', name: '星屑の天球儀', sub: '伝説秘宝・SSR ×2', col: '#FACC15',
+      desc: '星の輝きを閉じ込めた伝説の秘宝。星屑の結晶2個と不死のトーテム1個を獲得。',
+      grant: () => {
+        brewSave.mats.stardust = (brewSave.mats.stardust || 0) + 2;
+        if (typeof toolSave !== 'undefined') { toolSave.owned.totem = (toolSave.owned.totem || 0) + 1; if (typeof saveTools === 'function') saveTools(); }
+      } }
+  ];
+
+  function drawTreasureIcon(c, item, x, y, scale, t) {
+    c.save();
+    c.translate(x, y);
+    c.scale(scale, scale);
+    c.lineJoin = 'round';
+    c.lineCap = 'round';
+    const id = item.id;
+
+    if (id === 'totem') {
+      c.shadowColor = '#FACC15'; c.shadowBlur = 14;
+      const wg = c.createLinearGradient(-1.2, -0.5, 1.2, 0.3);
+      wg.addColorStop(0, '#FDE047'); wg.addColorStop(0.5, '#D97706'); wg.addColorStop(1, '#FDE047');
+      c.fillStyle = wg; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.beginPath();
+      c.moveTo(-0.35, -0.25); c.lineTo(-1.25, -0.65); c.lineTo(-1.1, -0.25); c.lineTo(-1.22, -0.1);
+      c.lineTo(-0.98, 0.18); c.lineTo(-0.35, 0.28);
+      c.moveTo(0.35, -0.25); c.lineTo(1.25, -0.65); c.lineTo(1.1, -0.25); c.lineTo(1.22, -0.1);
+      c.lineTo(0.98, 0.18); c.lineTo(0.35, 0.28);
+      c.fill(); c.stroke();
+      c.shadowBlur = 0;
+
+      const bg = c.createLinearGradient(-0.4, -1.0, 0.4, 1.0);
+      bg.addColorStop(0, '#FEF9C3'); bg.addColorStop(0.35, '#F59E0B'); bg.addColorStop(0.8, '#B45309'); bg.addColorStop(1, '#78350F');
+      c.fillStyle = bg;
+      gRR(c, -0.44, -0.98, 0.88, 1.96, 0.14);
+      c.fill(); c.stroke();
+
+      c.fillStyle = '#FEF08A';
+      c.fillRect(-0.32, -0.8, 0.64, 0.24); c.strokeRect(-0.32, -0.8, 0.64, 0.24);
+      const eg = c.createRadialGradient(-0.18, -0.24, 0.02, -0.18, -0.22, 0.15);
+      eg.addColorStop(0, '#A7F3D0'); eg.addColorStop(0.6, '#10B981'); eg.addColorStop(1, '#064E3B');
+      c.fillStyle = eg;
+      c.beginPath(); c.arc(-0.18, -0.22, 0.14, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.beginPath(); c.arc(0.18, -0.22, 0.14, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.strokeStyle = '#451A03'; c.lineWidth = 0.07;
+      c.beginPath(); c.moveTo(-0.24, 0.22); c.lineTo(0.24, 0.22); c.moveTo(0, 0.06); c.lineTo(0, 0.72); c.stroke();
+    } else if (id === 'flash') {
+      c.shadowColor = '#FEF08A'; c.shadowBlur = 18;
+      const g = c.createRadialGradient(0, 0, 0.08, 0, 0, 1.2);
+      g.addColorStop(0, '#FFFFFF'); g.addColorStop(0.45, '#FEF08A'); g.addColorStop(0.85, '#F59E0B'); g.addColorStop(1, 'rgba(245,158,11,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      for (let i = 0; i < 20; i++) {
+        const rr = i % 2 === 0 ? 1.18 : 0.46;
+        const a = i * Math.PI / 10 + t * 0.025;
+        c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      const sg = c.createRadialGradient(-0.12, -0.12, 0.04, 0, 0, 0.38);
+      sg.addColorStop(0, '#94A3B8'); sg.addColorStop(0.5, '#334155'); sg.addColorStop(1, '#0F172A');
+      c.fillStyle = sg; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.beginPath(); c.arc(0, 0, 0.38, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.fillStyle = '#FFFFFF';
+      c.beginPath(); c.arc(-0.12, -0.12, 0.1, 0, Math.PI * 2); c.fill();
+    } else if (id === 'charm') {
+      c.save();
+      c.rotate(-0.1);
+      c.shadowColor = '#FB7185'; c.shadowBlur = 12;
+      const pg = c.createLinearGradient(-0.5, -0.95, 0.5, 0.95);
+      pg.addColorStop(0, '#FFFFFF'); pg.addColorStop(1, '#FDE68A');
+      c.fillStyle = pg; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.fillRect(-0.54, -0.96, 1.08, 1.92); c.strokeRect(-0.54, -0.96, 1.08, 1.92);
+      c.shadowBlur = 0;
+      c.strokeStyle = '#E11D48'; c.lineWidth = 0.11;
+      c.beginPath();
+      c.moveTo(0, -0.7); c.lineTo(0, 0.7);
+      c.moveTo(-0.34, -0.38); c.lineTo(0.34, -0.38);
+      c.moveTo(-0.3, 0.26); c.lineTo(0, -0.06); c.lineTo(0.3, 0.26);
+      c.stroke();
+      c.fillStyle = 'rgba(225,29,72,0.22)';
+      c.fillRect(-0.32, 0.46, 0.64, 0.32);
+      c.restore();
+    } else if (id === 'magnet') {
+      c.strokeStyle = '#38BDF8'; c.lineWidth = 0.07;
+      c.beginPath();
+      c.arc(0, -0.78, 0.42 + Math.sin(t * 0.12) * 0.08, Math.PI, 0, false);
+      c.stroke();
+      const mg = c.createLinearGradient(-0.8, 0, 0.8, 0.9);
+      mg.addColorStop(0, '#F87171'); mg.addColorStop(0.5, '#DC2626'); mg.addColorStop(1, '#7F1D1D');
+      c.strokeStyle = INK3; c.lineWidth = 0.08; c.fillStyle = mg;
+      c.beginPath();
+      c.arc(0, 0.1, 0.8, 0, Math.PI, false);
+      c.lineTo(-0.8, -0.76); c.lineTo(-0.36, -0.76); c.lineTo(-0.36, 0.1);
+      c.arc(0, 0.1, 0.36, Math.PI, 0, true);
+      c.lineTo(0.36, -0.76); c.lineTo(0.8, -0.76);
+      c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#F8FAFC';
+      c.fillRect(-0.8, -0.76, 0.44, 0.36); c.strokeRect(-0.8, -0.76, 0.44, 0.36);
+      c.fillRect(0.36, -0.76, 0.44, 0.36); c.strokeRect(0.36, -0.76, 0.44, 0.36);
+    } else if (id === 'dragon_scale') {
+      c.shadowColor = '#F43F5E'; c.shadowBlur = 20;
+      const pts = [[0, -1.2], [0.92, -0.45], [0.76, 0.72], [0, 1.22], [-0.76, 0.72], [-0.92, -0.45]];
+      const g = c.createLinearGradient(-0.9, -1.2, 0.9, 1.2);
+      g.addColorStop(0, '#FFE4E6'); g.addColorStop(0.28, '#F43F5E'); g.addColorStop(0.7, '#9F1239'); g.addColorStop(1, '#4C0519');
+      c.fillStyle = g; c.strokeStyle = INK3; c.lineWidth = 0.09;
+      c.beginPath();
+      pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+      c.closePath(); c.fill(); c.stroke();
+      c.shadowBlur = 0;
+
+      c.fillStyle = 'rgba(255, 255, 255, 0.34)';
+      c.beginPath(); c.moveTo(0, -1.2); c.lineTo(0.48, -0.22); c.lineTo(0, 0.25); c.lineTo(-0.48, -0.22); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(254, 205, 211, 0.22)';
+      c.beginPath(); c.moveTo(-0.92, -0.45); c.lineTo(-0.48, -0.22); c.lineTo(-0.38, 0.55); c.lineTo(-0.76, 0.72); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 0.04;
+      c.beginPath();
+      c.moveTo(0, -1.2); c.lineTo(0, 1.22);
+      c.moveTo(-0.92, -0.45); c.lineTo(0, 0.25); c.lineTo(0.92, -0.45);
+      c.moveTo(-0.76, 0.72); c.lineTo(0, 0.25); c.lineTo(0.76, 0.72);
+      c.stroke();
+    } else if (id === 'royal_scroll') {
+      c.shadowColor = '#C084FC'; c.shadowBlur = 18;
+      const g = c.createLinearGradient(-0.9, -0.7, 0.9, 0.7);
+      g.addColorStop(0, '#A855F7'); g.addColorStop(0.5, '#581C87'); g.addColorStop(1, '#2E1065');
+      c.fillStyle = g; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.fillRect(-0.86, -0.6, 1.72, 1.2); c.strokeRect(-0.86, -0.6, 1.72, 1.2);
+      c.shadowBlur = 0;
+      c.strokeStyle = 'rgba(250, 204, 21, 0.28)'; c.lineWidth = 0.04;
+      for (let k = -0.6; k <= 0.6; k += 0.3) {
+        c.beginPath(); c.moveTo(k - 0.2, -0.58); c.lineTo(k + 0.2, 0.58); c.stroke();
+      }
+      const ag = c.createLinearGradient(0, -0.7, 0, 0.7);
+      ag.addColorStop(0, '#FEF08A'); ag.addColorStop(0.5, '#F59E0B'); ag.addColorStop(1, '#92400E');
+      c.fillStyle = ag; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.fillRect(-1.02, -0.7, 0.24, 1.4); c.strokeRect(-1.02, -0.7, 0.24, 1.4);
+      c.fillRect(0.78, -0.7, 0.24, 1.4); c.strokeRect(0.78, -0.7, 0.24, 1.4);
+      c.fillStyle = '#FACC15';
+      c.fillRect(-0.16, -0.6, 0.32, 1.2); c.strokeRect(-0.16, -0.6, 0.32, 1.2);
+      gCrystal(c, 0, 0, 0.38, '#38BDF8', 12);
+    } else if (id === 'astral_core') {
+      c.shadowColor = '#FACC15'; c.shadowBlur = 24;
+      c.strokeStyle = '#FDE047'; c.lineWidth = 0.08;
+      c.save(); c.rotate(t * 0.035);
+      c.beginPath(); c.ellipse(0, 0, 1.16, 0.4, 0.45, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); c.ellipse(0, 0, 1.16, 0.4, -0.45, 0, Math.PI * 2); c.stroke();
+      c.strokeStyle = '#38BDF8';
+      c.beginPath(); c.ellipse(0, 0, 1.05, 0.35, 1.57, 0, Math.PI * 2); c.stroke();
+      c.restore();
+
+      const rg = c.createRadialGradient(0, 0, 0.04, 0, 0, 0.84);
+      rg.addColorStop(0, '#FFFFFF'); rg.addColorStop(0.35, '#FEF08A'); rg.addColorStop(0.7, '#F59E0B'); rg.addColorStop(1, '#92400E');
+      c.fillStyle = rg; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.beginPath();
+      for (let i = 0; i < 16; i++) {
+        const rr = i % 2 === 0 ? 0.84 : 0.34;
+        const a = i * Math.PI / 8 - Math.PI / 2;
+        c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      c.closePath(); c.fill(); c.stroke();
+      c.shadowBlur = 0;
+      c.fillStyle = '#FFFFFF';
+      c.beginPath(); c.arc(0, 0, 0.2, 0, Math.PI * 2); c.fill();
+    } else if (id === 'shroom_pack') {
+      c.fillStyle = '#F1F5F9'; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.fillRect(-0.24, 0.05, 0.48, 0.78); c.strokeRect(-0.24, 0.05, 0.48, 0.78);
+      const mg = c.createRadialGradient(0, -0.35, 0.08, 0, -0.2, 0.86);
+      mg.addColorStop(0, '#F3E8FF'); mg.addColorStop(0.55, '#8B5CF6'); mg.addColorStop(1, '#3B0764');
+      c.fillStyle = mg;
+      c.beginPath(); c.arc(0, 0.08, 0.8, Math.PI, 0, false); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#FEF08A';
+      c.beginPath(); c.arc(-0.28, -0.32, 0.13, 0, Math.PI * 2); c.arc(0.25, -0.25, 0.11, 0, Math.PI * 2); c.fill();
+    } else if (id === 'ember_pack') {
+      const fg = c.createLinearGradient(0, -0.95, 0, 0.9);
+      fg.addColorStop(0, '#FEF9C3'); fg.addColorStop(0.45, '#F97316'); fg.addColorStop(1, '#991B1B');
+      c.fillStyle = fg; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.beginPath();
+      c.moveTo(-0.48, 0.78); c.quadraticCurveTo(-0.68, -0.1, 0, -0.98);
+      c.quadraticCurveTo(0.68, -0.1, 0.48, 0.78); c.quadraticCurveTo(0, 0.96, -0.48, 0.78);
+      c.fill(); c.stroke();
+    } else {
+      gCrystal(c, 0.26, 0.08, 0.58, '#38BDF8', 10);
+      const hg = c.createLinearGradient(-0.5, -0.4, -0.1, 0.6);
+      hg.addColorStop(0, '#BBF7D0'); hg.addColorStop(1, '#16A34A');
+      c.fillStyle = hg; c.strokeStyle = INK3; c.lineWidth = 0.08;
+      c.beginPath(); c.ellipse(-0.32, 0.14, 0.28, 0.56, -0.4, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+    c.restore();
+  }
+
+  function drawToriiSilhouette(c, cx, baseY) {
+    c.save();
+    c.fillStyle = '#0D1528';
+    c.fillRect(cx - 110, baseY - 210, 18, 210);
+    c.fillRect(cx + 92, baseY - 210, 18, 210);
+    c.fillRect(cx - 135, baseY - 165, 270, 14);
+    c.beginPath();
+    c.moveTo(cx - 160, baseY - 222);
+    c.quadraticCurveTo(cx, baseY - 208, cx + 160, baseY - 222);
+    c.lineTo(cx + 150, baseY - 204);
+    c.quadraticCurveTo(cx, baseY - 194, cx - 150, baseY - 204);
+    c.closePath();
+    c.fill();
+    c.restore();
+  }
+
+  function drawNinjaChest(c, cx, cy, openP, shakeX, shakeY, auraCol, t) {
+    c.save();
+    c.translate(cx + shakeX, cy + shakeY);
+    c.lineJoin = 'round';
+
+    c.fillStyle = 'rgba(0,0,0,0.65)';
+    c.beginPath();
+    c.ellipse(0, 76, 124, 24, 0, 0, Math.PI * 2);
+    c.fill();
+
+    const bodyG = c.createLinearGradient(0, -10, 0, 74);
+    bodyG.addColorStop(0, '#B45309');
+    bodyG.addColorStop(0.5, '#78350F');
+    bodyG.addColorStop(1, '#451A03');
+    c.fillStyle = bodyG;
+    c.strokeStyle = INK3;
+    c.lineWidth = 4;
+    c.fillRect(-98, -8, 196, 82);
+    c.strokeRect(-98, -8, 196, 82);
+
+    c.fillStyle = '#1E293B';
+    c.fillRect(-98, -8, 20, 82); c.strokeRect(-98, -8, 20, 82);
+    c.fillRect(78, -8, 20, 82); c.strokeRect(78, -8, 20, 82);
+    c.fillRect(-98, 56, 196, 18); c.strokeRect(-98, 56, 196, 18);
+    c.fillStyle = '#FACC15';
+    [[-88, 10], [-88, 36], [88, 10], [88, 36], [-50, 65], [0, 65], [50, 65]].forEach(pt => {
+      c.beginPath(); c.arc(pt[0], pt[1], 3.2, 0, Math.PI * 2); c.fill();
+    });
+
+    if (openP > 0) {
+      const lg = c.createRadialGradient(0, -10, 5, 0, -60, 210 * openP);
+      lg.addColorStop(0, '#FFFFFF');
+      lg.addColorStop(0.35, auraCol);
+      lg.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = lg;
+      c.beginPath();
+      c.moveTo(-88, -8);
+      c.lineTo(-175 * openP, -280 * openP);
+      c.lineTo(175 * openP, -280 * openP);
+      c.lineTo(88, -8);
+      c.closePath();
+      c.fill();
+    }
+
+    c.save();
+    c.translate(0, -8 - openP * 42);
+    c.scale(1, Math.max(0.22, 1 - openP * 0.7));
+    const lidG = c.createLinearGradient(0, -58, 0, 0);
+    lidG.addColorStop(0, '#F59E0B');
+    lidG.addColorStop(0.5, '#B45309');
+    lidG.addColorStop(1, '#78350F');
+    c.fillStyle = lidG;
+    c.strokeStyle = INK3;
+    c.lineWidth = 4;
+    c.fillRect(-104, -54, 208, 54);
+    c.strokeRect(-104, -54, 208, 54);
+    c.fillStyle = '#1E293B';
+    c.fillRect(-104, -54, 22, 54); c.strokeRect(-104, -54, 22, 54);
+    c.fillRect(82, -54, 22, 54); c.strokeRect(82, -54, 22, 54);
+    c.restore();
+
+    if (openP < 0.35) {
+      const alpha = 1 - openP / 0.35;
+      c.globalAlpha = alpha;
+      c.strokeStyle = '#CBD5E1';
+      c.lineWidth = 8;
+      c.beginPath();
+      c.moveTo(-102, -48); c.lineTo(102, 64);
+      c.moveTo(102, -48); c.lineTo(-102, 64);
+      c.stroke();
+      c.strokeStyle = INK3;
+      c.lineWidth = 2.5;
+      c.stroke();
+
+      c.fillStyle = '#FFD600';
+      c.strokeStyle = INK3;
+      c.lineWidth = 3;
+      c.fillRect(-22, -26, 44, 38);
+      c.strokeRect(-22, -26, 44, 38);
+
+      c.fillStyle = '#FFFBEB';
+      c.fillRect(-13, -52, 26, 74);
+      c.strokeRect(-13, -52, 26, 74);
+      c.strokeStyle = '#E11D48';
+      c.lineWidth = 2.8;
+      c.beginPath();
+      c.moveTo(0, -40); c.lineTo(0, 12);
+      c.moveTo(-8, -24); c.lineTo(8, -24);
+      c.moveTo(-7, -4); c.lineTo(7, -4);
+      c.stroke();
+      c.globalAlpha = 1;
+    }
+    c.restore();
+  }
+
+  function drawScrollCard(c, x, y, s, item, unfold, mini, t) {
+    const rc = RAR[item.r];
+    const w = 236, h = 316;
+    const hScale = Math.max(0.08, unfold);
+
+    c.save();
+    c.translate(x, y);
+    c.scale(s, s);
+    c.lineJoin = 'round';
+
+    c.save();
+    c.scale(1, hScale);
+    if (item.r >= 2) {
+      c.shadowColor = rc.col;
+      c.shadowBlur = 32;
+    }
+    const wg = c.createLinearGradient(0, -h / 2, 0, h / 2);
+    wg.addColorStop(0, '#FFFBEB');
+    wg.addColorStop(0.5, '#FFFDF7');
+    wg.addColorStop(1, '#FEF3C7');
+    c.fillStyle = wg;
+    c.strokeStyle = INK3;
+    c.lineWidth = 5;
+    c.fillRect(-w / 2, -h / 2, w, h);
+    c.strokeRect(-w / 2, -h / 2, w, h);
+    c.shadowBlur = 0;
+
+    c.strokeStyle = rc.col;
+    c.lineWidth = 4.5;
+    c.strokeRect(-w / 2 + 10, -h / 2 + 10, w - 20, h - 20);
+    c.strokeStyle = 'rgba(30,30,36,0.25)';
+    c.lineWidth = 1.5;
+    c.strokeRect(-w / 2 + 15, -h / 2 + 15, w - 30, h - 30);
+
+    c.fillStyle = '#451A03';
+    c.strokeStyle = INK3;
+    c.lineWidth = 3;
+    c.fillRect(-w / 2 - 14, -h / 2 - 9, w + 28, 16);
+    c.strokeRect(-w / 2 - 14, -h / 2 - 9, w + 28, 16);
+    c.fillRect(-w / 2 - 14, h / 2 - 7, w + 28, 16);
+    c.strokeRect(-w / 2 - 14, h / 2 - 7, w + 28, 16);
+
+    c.fillStyle = '#FACC15';
+    c.fillRect(-w / 2 - 14, -h / 2 - 9, 14, 16); c.strokeRect(-w / 2 - 14, -h / 2 - 9, 14, 16);
+    c.fillRect(w / 2, -h / 2 - 9, 14, 16); c.strokeRect(w / 2, -h / 2 - 9, 14, 16);
+    c.fillRect(-w / 2 - 14, h / 2 - 7, 14, 16); c.strokeRect(-w / 2 - 14, h / 2 - 7, 14, 16);
+    c.fillRect(w / 2, h / 2 - 7, 14, 16); c.strokeRect(w / 2, h / 2 - 7, 14, 16);
+
+    if (unfold > 0.65) {
+      c.fillStyle = rc.col;
+      c.fillRect(-w / 2 + 20, -h / 2 + 20, 52, 24);
+      c.strokeStyle = INK3;
+      c.lineWidth = 2;
+      c.strokeRect(-w / 2 + 20, -h / 2 + 20, 52, 24);
+      c.textAlign = 'center';
+      c.font = '900 16px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = item.r === 0 ? '#1E1E24' : '#FFFFFF';
+      c.fillText(rc.k, -w / 2 + 46, -h / 2 + 37);
+
+      c.font = '900 11px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#475569';
+      c.fillText(item.kind === 'tool' ? 'NINJA GEAR' : (item.kind === 'relic' ? 'SACRED RELIC' : 'MATERIAL'), w / 2 - 64, -h / 2 + 36);
+
+      const cg = c.createRadialGradient(0, -34, 8, 0, -34, 64);
+      cg.addColorStop(0, '#1E293B');
+      cg.addColorStop(1, '#090D16');
+      c.fillStyle = cg;
+      c.beginPath();
+      c.arc(0, -34, 64, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = rc.col;
+      c.lineWidth = 4;
+      c.stroke();
+
+      drawTreasureIcon(c, item, 0, -34, 44, t);
+
+      c.textAlign = 'center';
+      c.font = '900 ' + (mini ? 23 : 21) + 'px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#1E1E24';
+      c.fillText(item.name, 0, 62);
+
+      c.font = '900 14px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = item.r === 0 ? '#0F172A' : shade(rc.col, -0.25);
+      c.fillText(item.sub, 0, 88);
+
+      if (!mini) {
+        c.font = '800 12px "M PLUS Rounded 1c", sans-serif';
+        c.fillStyle = '#334155';
+        gWrap(c, item.desc, 190).slice(0, 3).forEach((ln, i) => {
+          c.fillText(ln, 0, 114 + i * 17);
+        });
+      }
+    }
+    c.restore();
+    c.restore();
+  }
+
+  const TG = {
+    on: false,
+    t: 0,
+    res: [],
+    best: 0,
+    raf: null,
+    doneT: 290,
+    sparks: [],
+    petals: [],
+    bamboo: []
+  };
+
+  function spawnTsparks(x, y, col, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 2.5 + Math.random() * 8.5;
+      TG.sparks.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 2.5,
+        size: 4 + Math.random() * 6,
+        col,
+        life: 35 + Math.random() * 35
+      });
+    }
+  }
+
+  function drawTreasureScene() {
+    const W = 420, H = 720, cx = 210, cy = 385;
+    const t = TG.t, best = TG.best, single = TG.res.length === 1;
+    const clamp = v => Math.max(0, Math.min(1, v));
+    const ease = v => 1 - Math.pow(1 - clamp(v), 3);
+    const auraCol = best === 3 ? '#FACC15' : RAR[best].col;
+
+    const sky = tc.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#050814');
+    sky.addColorStop(0.5, '#0F172A');
+    sky.addColorStop(1, '#04060E');
+    tc.fillStyle = sky;
+    tc.fillRect(0, 0, W, H);
+
+    tc.save();
+    tc.fillStyle = t >= 130 ? auraCol : '#FEF9C3';
+    tc.shadowColor = t >= 130 ? auraCol : '#FDE047';
+    tc.shadowBlur = 45;
+    tc.beginPath();
+    tc.arc(315, 130, 54, 0, Math.PI * 2);
+    tc.fill();
+    tc.restore();
+
+    drawToriiSilhouette(tc, cx, 465);
+    tc.fillStyle = '#091020';
+    TG.bamboo.forEach(b => {
+      tc.fillRect(b.x, 0, b.w, H);
+      for (let y = b.off; y < H; y += 75) {
+        tc.fillRect(b.x - 2, y, b.w + 4, 4);
+      }
+    });
+
+    TG.petals.forEach(pt => {
+      pt.x += pt.vx + Math.sin(t * 0.04 + pt.ph) * 0.6;
+      pt.y += pt.vy;
+      if (pt.y > H + 10) { pt.y = -10; pt.x = Math.random() * W; }
+      tc.save();
+      tc.translate(pt.x, pt.y);
+      tc.rotate(t * 0.05 + pt.ph);
+      tc.fillStyle = best >= 2 ? '#FDE047' : '#FDA4AF';
+      tc.fillRect(-4, -2, 8, 4);
+      tc.restore();
+    });
+
+    if (t < 175) {
+      const dropY = t < 35 ? -120 + ease(t / 35) * (cy + 120) : cy;
+      const shakePower = t > 45 && t < 135 ? Math.pow((t - 45) / 90, 2) * 11 : 0;
+      const sx = (Math.random() - 0.5) * shakePower;
+      const sy = (Math.random() - 0.5) * shakePower;
+      const openP = t < 135 ? 0 : clamp((t - 135) / 30);
+
+      if (t === 35) {
+        if (typeof gSfx === 'function') gSfx('charge');
+        spawnTsparks(cx, cy + 50, '#FACC15', 22);
+      }
+      if (t === 135) {
+        if (typeof gSfx === 'function') gSfx('burst', best);
+        spawnTsparks(cx, cy - 10, auraCol, 55);
+      }
+
+      drawNinjaChest(tc, cx, dropY, openP, sx, sy, auraCol, t);
+
+      if (t > 55 && t < 135 && t % 3 === 0) {
+        spawnTsparks(cx + (Math.random() - 0.5) * 150, cy + (Math.random() - 0.5) * 90, '#F97316', 2);
+      }
+    }
+
+    if (t >= 135 && t < 172) {
+      const fa = t < 145 ? (t - 135) / 10 : 1 - (t - 145) / 27;
+      tc.fillStyle = 'rgba(255, 255, 255, ' + clamp(fa) + ')';
+      tc.fillRect(0, 0, W, H);
+    }
+
+    if (t >= 155) {
+      tc.save();
+      tc.textAlign = 'center';
+      tc.font = '900 32px "M PLUS Rounded 1c", sans-serif';
+      tc.lineWidth = 7;
+      tc.strokeStyle = INK3;
+      const heading = single
+        ? (best === 3 ? '伝説秘宝 出現！' : (best === 2 ? '秘宝 出現！' : '忍具・秘宝 獲得！'))
+        : '忍具・秘宝 10連結果';
+      tc.strokeText(heading, cx, 88);
+      tc.fillStyle = best >= 2 ? auraCol : '#FFFFFF';
+      tc.fillText(heading, cx, 88);
+      tc.restore();
+
+      if (single) {
+        const unfold = ease((t - 155) / 32);
+        drawScrollCard(tc, cx, 355, 1.0, TG.res[0], unfold, false, t);
+      } else {
+        for (let i = 0; i < 10; i++) {
+          const t0 = 158 + i * 10;
+          if (t < t0) continue;
+          const colI = i % 5;
+          const rowI = Math.floor(i / 5);
+          const tx = cx + (colI - 2) * 80;
+          const ty = 265 + rowI * 135;
+          const unfold = ease((t - t0) / 18);
+          if (t === t0 && typeof gSfx === 'function') gSfx('flip', TG.res[i].r);
+          drawScrollCard(tc, tx, ty, 0.32, TG.res[i], unfold, true, t);
+        }
+      }
+    }
+
+    for (let i = TG.sparks.length - 1; i >= 0; i--) {
+      const p = TG.sparks[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.18;
+      p.life--;
+      if (p.life <= 0) {
+        TG.sparks.splice(i, 1);
+        continue;
+      }
+      tc.fillStyle = p.col;
+      tc.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    }
+  }
+
+  function tLoop() {
+    if (!TG.on) return;
+    TG.t++;
+    drawTreasureScene();
+    if (TG.t >= TG.doneT) {
+      okBtn.style.display = 'flex';
+      skipBtn.style.display = 'none';
+    }
+    TG.raf = requestAnimationFrame(tLoop);
+  }
+
+  function closeTreasureGacha() {
+    TG.on = false;
+    if (TG.raf) cancelAnimationFrame(TG.raf);
+    TG.raf = null;
+    tScreen.style.display = 'none';
+    if (typeof renderGachaHub === 'function') renderGachaHub();
+  }
+
+  skipBtn.addEventListener('click', () => {
+    if (!TG.on || TG.t >= TG.doneT) return;
+    TG.t = TG.doneT;
+  });
+  okBtn.addEventListener('click', closeTreasureGacha);
+
+  window.openTreasureChestGacha = function (count) {
+    const cost = count === 10 ? 2200 : 250;
+    if (totalCoins < cost) {
+      if (typeof playSound === 'function') playSound('hit');
+      return;
+    }
+    totalCoins -= cost;
+    saveCoinAndSkinData();
+
+    const rollOne = (minR) => {
+      let x = Math.random() * 100, r = 0;
+      for (; r < 4; r++) {
+        if (x < RAR[r].w) break;
+        x -= RAR[r].w;
+      }
+      r = Math.max(minR, Math.min(r, 3));
+      const cand = TREASURE_POOL.filter(it => it.r === r);
+      return cand[Math.floor(Math.random() * cand.length)];
+    };
+
+    const res = [];
+    for (let i = 0; i < count; i++) res.push(rollOne(0));
+    if (count === 10 && !res.some(o => o.r >= 1)) {
+      res[9] = rollOne(1);
+    }
+    res.forEach(o => { if (o.grant) o.grant(); });
+    if (typeof saveBrew === 'function') saveBrew();
+
+    TG.on = true;
+    TG.t = 0;
+    TG.res = res;
+    TG.best = res.reduce((m, o) => Math.max(m, o.r), 0);
+    TG.doneT = count === 10 ? 280 : 220;
+    TG.sparks = [];
+    TG.petals = [];
+    for (let i = 0; i < 28; i++) {
+      TG.petals.push({
+        x: Math.random() * 420,
+        y: Math.random() * 720,
+        vx: -0.4 - Math.random() * 0.6,
+        vy: 0.8 + Math.random() * 1.1,
+        ph: Math.random() * 6.28
+      });
+    }
+    TG.bamboo = [
+      { x: 18, w: 14, off: 10 },
+      { x: 58, w: 10, off: 45 },
+      { x: 350, w: 12, off: 20 },
+      { x: 386, w: 16, off: 55 }
+    ];
+
+    tScreen.style.display = 'block';
+    okBtn.style.display = 'none';
+    skipBtn.style.display = 'flex';
+    if (TG.raf) cancelAnimationFrame(TG.raf);
+    TG.raf = requestAnimationFrame(tLoop);
+  };
+})();
+
+
+// ==========================================
+// 4. THE FANTASY 隠し出口の「若干の異変」
+// ==========================================
+(function () {
+  if (typeof drawFanExit !== 'function') return;
+
+  const baseDrawFanExit16 = drawFanExit;
+  const motes = [
+    { ox: 5, oy: 10, sp: 0.16, ph: 0.4 },
+    { ox: 15, oy: 26, sp: 0.21, ph: 2.7 }
+  ];
+
+  drawFanExit = function () {
+    if (!fanExit || fanExitTaken) return;
+    const e = fanExit;
+    const sy = e.y - cameraY;
+    if (sy < -120 || sy > canvas.height + 120) return;
+
+    const now = performance.now() * 0.001;
+    const left = e.side === 'left';
+
+    // 出口付近の壁面だけ、色がごくわずかに暗く紫がかって変質している
+    ctx.save();
+    const wallX = left ? 0 : RIGHT_WALL_X;
+    const wallW = left ? LEFT_WALL_X : (canvas.width - RIGHT_WALL_X);
+    const bandTop = sy - 55;
+    const bandH = e.h + 110;
+    const wg = ctx.createLinearGradient(0, bandTop, 0, bandTop + bandH);
+    wg.addColorStop(0, 'rgba(38, 18, 68, 0)');
+    wg.addColorStop(0.35, 'rgba(38, 18, 68, 0.28)');
+    wg.addColorStop(0.5, 'rgba(54, 24, 92, 0.36)');
+    wg.addColorStop(0.65, 'rgba(38, 18, 68, 0.28)');
+    wg.addColorStop(1, 'rgba(38, 18, 68, 0)');
+    ctx.fillStyle = wg;
+    ctx.fillRect(wallX, bandTop, wallW, bandH);
+    ctx.restore();
+
+    // 扉本体をほんの少し傾けて描画し、隙間から淡い光と極小の粒を漏らす
+    const scx = e.x + e.w / 2;
+    const scy = sy + e.h / 2;
+    ctx.save();
+    ctx.translate(scx, scy);
+    ctx.rotate(left ? -0.035 : 0.035);
+    ctx.translate(-scx, -scy);
+    baseDrawFanExit16();
+
+    const leakAlpha = 0.22 + 0.16 * Math.sin(now * 2.2);
+    const seamX = left ? (e.x + e.w - 1.5) : (e.x + 1.5);
+    ctx.strokeStyle = `rgba(254, 240, 175, ${leakAlpha.toFixed(3)})`;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(seamX, sy + 8);
+    ctx.lineTo(seamX, sy + e.h - 2);
+    ctx.stroke();
+
+    motes.forEach(m => {
+      const prog = (now * m.sp + m.ph) % 1;
+      const mx = e.x + m.ox + Math.sin(now * 1.8 + m.ph) * 2.5;
+      const my = sy + e.h - prog * (e.h + 16);
+      const ma = Math.sin(prog * Math.PI) * 0.5;
+      ctx.fillStyle = `rgba(253, 224, 71, ${ma.toFixed(3)})`;
+      ctx.fillRect(mx, my, 2, 2);
+    });
+
+    if (Math.sin(now * 7.3) > 0.92) {
+      ctx.fillStyle = 'rgba(220, 210, 255, 0.32)';
+      ctx.fillRect(e.x - 2, sy + e.h + 6, e.w + 4, 1);
+    }
+    ctx.restore();
+  };
+})();

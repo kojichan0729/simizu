@@ -1281,3 +1281,404 @@ body.gfx-boost #screen-title h1 {
 }
 
 /* split13: 追加のスタイルなし */
+
+
+/* SPLIT15 */
+/* タイトル画面下部の操作説明を非表示 */
+.controls-hint {
+  display: none !important;
+}
+
+/* ホーム画面 ガチャボタン */
+.btn-gacha-home {
+  background: #FFD600;
+  color: #1E1E24;
+}
+
+/* 独立ガチャ画面 */
+#screen-gacha-hub {
+  background: #FFFDF0;
+  color: #1E1E24;
+}
+.gacha-hub-list {
+  width: 100%;
+  max-width: 330px;
+  max-height: 440px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 4px 10px 2px;
+  margin-bottom: 10px;
+}
+
+/* 醸造UI（既存ショップ・忍術カード統一：角丸なし・太枠・ハードシャドウ） */
+.brew-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+.brew-panel {
+  background: #0F172A;
+  color: #F8FAFC;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 4px 4px 0px #1E1E24;
+  padding: 10px;
+}
+.brew-panel.light {
+  background: #FFFFFF;
+  color: #1E1E24;
+}
+.brew-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #334155;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+.brew-panel.light .brew-head {
+  border-bottom-color: #CBD5E1;
+}
+.brew-title {
+  font-size: 14px;
+  font-weight: 900;
+}
+.brew-badge {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  background: #FFD600;
+  color: #1E1E24;
+  border: 2px solid #1E1E24;
+  border-radius: 2px;
+}
+.brew-slots {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.brew-slot {
+  flex: 1;
+  height: 68px;
+  background: #1E293B;
+  border: 3px solid #475569;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3px;
+  cursor: pointer;
+}
+.brew-slot.filled {
+  background: #0F172A;
+  border-color: #FFD600;
+}
+.brew-slot svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+.brew-mat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.brew-mat-card {
+  background: #F8FAFC;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+}
+.brew-mat-top {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.brew-mat-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  background: #0F172A;
+  border: 2px solid #1E1E24;
+  border-radius: 2px;
+  padding: 3px;
+}
+.brew-mat-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.brew-pot-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px;
+  margin-top: 6px;
+  background: #F8FAFC;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+}
+.brew-pot-item.equipped {
+  background: #DCFCE7;
+  border-color: #16A34A;
+}
+
+/* バトル中ポーション使用ボタン（左下・忍術ボタンの上） */
+#battle-potion-btn {
+  position: absolute;
+  left: 6px;
+  bottom: 42px;
+  z-index: 18;
+  display: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 5px 8px;
+  background: #FFD600;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+#battle-potion-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #1E1E24;
+}
+#battle-potion-btn.active-buff {
+  background: #00E676;
+  color: #1E1E24;
+}
+
+/* 回転攻撃タッチボタン（バトル中のみ表示） */
+#touch-spin-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 38px;
+  width: 66px;
+  height: 44px;
+  border-radius: 3px;
+  background: #FF2A55;
+  color: #FFFFFF;
+  border: 3px solid #1E1E24;
+  box-shadow: 3px 3px 0px #1E1E24;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 18;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+#touch-spin-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #1E1E24;
+}
+#touch-spin-btn.cooldown {
+  background: #94A3B8;
+  color: #1E293B;
+}
+
+/* 忍具・秘宝ガチャ＆更衣室・工房 */
+#treasure-gacha-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 42;
+  display: none;
+  background: #050811;
+}
+#treasure-gacha-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#treasure-gacha-skip {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 45;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+#treasure-gacha-ok {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 45;
+  width: 210px;
+  justify-content: center;
+  display: none;
+}
+
+#title-equip-tag {
+  cursor: pointer !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  user-select: none;
+}
+#title-equip-tag:hover {
+  transform: translate(-1px, -1px);
+  filter: brightness(1.04);
+}
+#title-equip-tag:active {
+  transform: translate(2px, 2px);
+}
+
+#screen-wardrobe {
+  background: #F8FAFC;
+  color: #1E1E24;
+  z-index: 26;
+}
+.wd-summary-box {
+  width: 100%;
+  max-width: 340px;
+  background: #0F172A;
+  color: #F8FAFC;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 4px 4px 0px #1E1E24;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 800;
+}
+.wd-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+.wd-tabs {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 8px;
+}
+.wd-tab {
+  flex: 1;
+  padding: 7px 4px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  background: #E2E8F0;
+  color: #1E1E24;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 2px 2px 0px #1E1E24;
+  cursor: pointer;
+}
+.wd-tab.active {
+  background: #FFD600;
+  color: #1E1E24;
+}
+.wd-subtabs {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 8px;
+}
+.wd-subtab {
+  flex: 1;
+  padding: 6px 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  background: #1E293B;
+  color: #CBD5E1;
+  border: 2px solid #1E1E24;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.wd-subtab.active {
+  background: #38BDF8;
+  color: #0F172A;
+}
+.wd-body {
+  width: 100%;
+  max-width: 340px;
+  max-height: 390px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 4px 10px 2px;
+  margin-bottom: 8px;
+  text-align: left;
+}
+.wd-sec {
+  background: #FFFFFF;
+  border: 3px solid #1E1E24;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0px #1E1E24;
+  padding: 8px;
+}
+.wd-sec-title {
+  font-size: 12px;
+  font-weight: 900;
+  border-bottom: 2px solid #CBD5E1;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.wd-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.wd-chip {
+  background: #F1F5F9;
+  border: 2px solid #1E1E24;
+  border-radius: 3px;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wd-chip.eq {
+  background: #DCFCE7;
+  border-color: #16A34A;
+  box-shadow: 2px 2px 0px #16A34A;
+}
+.wd-title-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #7C3AED;
+  color: #FFFFFF;
+  border: 2px solid #1E1E24;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 900;
+}
